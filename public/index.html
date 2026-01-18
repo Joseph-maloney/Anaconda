@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Multiplayer Game</title>
+</head>
+<body>
+
+<canvas id="game" width="600" height="400" style="border:1px solid black;"></canvas>
+
+<!-- Socket.IO client -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  // Connect to the server
+  const socket = io();
+
+  // Your player
+  let player = { x: 100, y: 100, color: "red" };
+
+  // All players (including yourself)
+  let players = {};
+
+  // Move your square with arrow keys
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp") player.y -= 5;
+    if (e.key === "ArrowDown") player.y += 5;
+    if (e.key === "ArrowLeft") player.x -= 5;
+    if (e.key === "ArrowRight") player.x += 5;
+
+    socket.emit("move", player);
+  });
+
+  // Receive all players from server
+  socket.on("state", serverPlayers => {
+    players = serverPlayers;
+  });
+
+  // Draw loop
+  function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let id in players) {
+      let p = players[id];
+      ctx.fillStyle = p.color || "blue";
+      ctx.fillRect(p.x, p.y, 50, 50);
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  loop();
+</script>
+
+</body>
+</html>
