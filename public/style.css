@@ -3,7 +3,7 @@ body, html {
   padding: 0;
   height: 100%;
   font-family: Arial, sans-serif;
-  background: linear-gradient(to bottom, #1e1e1e, #333);
+  background: linear-gradient(to bottom, var(--bg-color), var(--sub-color));
 }
 
 #lobby {
@@ -12,41 +12,10 @@ body, html {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: white;
+  color: var(--main-color);
   padding: 20px;
   box-sizing: border-box;
   transition: opacity 0.5s ease;
-}
-
-#skins {
-  display: flex;
-  gap: 10px;
-  margin: 10px 0;
-}
-
-.skin {
-  width: 50px;
-  height: 50px;
-  border: 2px solid #fff;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.skin:hover {
-  transform: scale(1.2);
-}
-
-#nickname {
-  width: 80%;
-  max-width: 300px;
-  font-size: 1.2em;
-  padding: 12px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  border: none;
-  outline: none;
-  text-align: center;
 }
 
 #playBtn {
@@ -62,7 +31,7 @@ body, html {
 }
 
 #playBtn:hover {
-  background-color: var(--sub-color);
+  background-color: var(--main-color);
 }
 
 .hidden {
