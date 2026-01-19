@@ -1,59 +1,76 @@
-// Basic Phaser 3 config
-const config = {
-  type: Phaser.AUTO,              // WebGL if possible, otherwise Canvas
-  width: 800,
-  height: 600,
-  backgroundColor: '#222222',
-  parent: 'game-container',       // Div container
-  physics: {
-    default: 'arcade',            // Simple 2D physics engine
-    arcade: {
-      debug: false
-    }
-  },
-  scene: {
-    preload: preload,
-    create: create,
-    update: update
-  }
-};
+// Lobby selections
+let playerSettings = { color: 'red', nickname: 'Player' };
 
-// Create the game
-const game = new Phaser.Game(config);
+document.querySelectorAll('.skin').forEach(btn => {
+  btn.addEventListener('click', () => playerSettings.color = btn.dataset.color);
+});
 
-// Player variables
-let player;
+document.getElementById('nickname').addEventListener('input', e => {
+  playerSettings.nickname = e.target.value || 'Player';
+});
 
-function preload() {
-  // Load a sprite for the player
-  this.load.image('player', 'https://examples.phaser.io/assets/sprites/block.png');
-}
+document.getElementById('playBtn').addEventListener('click', () => {
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('game-container').style.display = 'block';
+  startGame();
+});
 
-function create() {
-  // Add player sprite to the scene
-  player = this.physics.add.sprite(400, 300, 'player');
+// Start Phaser game
+function startGame() {
+  const socket = io();
 
-  // Set player properties
-  player.setCollideWorldBounds(true);
-}
+  const players = {};
 
-function update() {
-  // Basic movement with arrow keys
-  const cursors = this.input.keyboard.createCursorKeys();
+  const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    parent: 'game-container',
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scene: { preload, create, update }
+  };
 
-  if (cursors.left.isDown) {
-    player.setVelocityX(-200);
-  } else if (cursors.right.isDown) {
-    player.setVelocityX(200);
-  } else {
-    player.setVelocityX(0);
+  const game = new Phaser.Game(config);
+
+  function preload() {
+    this.load.image('player', 'https://examples.phaser.io/assets/sprites/block.png');
   }
 
-  if (cursors.up.isDown) {
-    player.setVelocityY(-200);
-  } else if (cursors.down.isDown) {
-    player.setVelocityY(200);
-  } else {
-    player.setVelocityY(0);
+  function create() {
+    this.playerSprite = this.physics.add.sprite(400, 300, 'player');
+
+    this.cursors = this.input.keyboard.createCursorKeys();
+
+    // Send join info to server
+    socket.emit('join', playerSettings);
+
+    socket.on('state', serverPlayers => {
+      Object.assign(players, serverPlayers);
+      // handle creating/updating sprites here
+    });
+  }
+
+  function update() {
+    const speed = 200;
+    let vx = 0;
+    let vy = 0;
+
+    if (this.cursors.left.isDown) vx = -speed;
+    else if (this.cursors.right.isDown) vx = speed;
+
+    if (this.cursors.up.isDown) vy = -speed;
+    else if (this.cursors.down.isDown) vy = speed;
+
+    this.playerSprite.setVelocity(vx, vy);
+
+    // Emit current position
+    socket.emit('move', {
+      x: this.playerSprite.x,
+      y: this.playerSprite.y,
+      color: playerSettings.color,
+      nickname: playerSettings.nickname
+    });
+
+    // Update other player sprites
   }
 }
