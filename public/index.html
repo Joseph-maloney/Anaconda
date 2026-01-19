@@ -7,6 +7,9 @@
   <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
   <!-- Socket.IO -->
   <script src="/socket.io/socket.io.js"></script>
+
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/mt_themes/arch.css" id="themeStylesheet">
 </head>
 <body>
 
@@ -15,12 +18,13 @@
     <h2>Choose your skin:</h2>
     <input type="text" id="nickname" placeholder="Your Name" />
 
-    <div id="skins">
-      <button class="skin" data-color="red" style="background:red;"></button>
-      <button class="skin" data-color="blue" style="background:blue;"></button>
-      <button class="skin" data-color="green" style="background:green;"></button>
-    </div>
-
+  <div id="skins">
+    <button class="skin" data-color="red" style="background:rgb(3, 179, 59);"></button>
+    <button class="skin" data-color="blue" style="background:rgb(3, 99, 177);"></button>
+    <button class="skin" data-color="green" style="background:rgb(84, 2, 147);"></button>
+  </div>
+  
+    <button id="themeBtn">Change Theme</button>
     <button id="playBtn">Play</button>
   </div>
 

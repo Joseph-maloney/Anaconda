@@ -54,7 +54,7 @@ body, html {
   max-width: 200px;
   padding: 12px;
   font-size: 1.5em;
-  background-color: #ff4500;
+  background-color: var(--bg-color);
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -62,7 +62,7 @@ body, html {
 }
 
 #playBtn:hover {
-  background-color: #e03e00;
+  background-color: var(--sub-color);
 }
 
 .hidden {

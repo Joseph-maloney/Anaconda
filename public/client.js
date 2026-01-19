@@ -15,6 +15,24 @@ document.getElementById('playBtn').addEventListener('click', () => {
   startGame();
 });
 
+//themes
+const themes = [
+  "/mt_themes/arch.css",
+  "/mt_themes/carbon.css",
+  "/mt_themes/rainbow_trail.css",
+];
+
+let currentTheme = 0;
+
+document.getElementById("themeBtn").addEventListener("click", () => {
+  currentTheme = (currentTheme + 1) % themes.length;
+  document.getElementById("themeStylesheet").href = themes[currentTheme];
+
+  // Optional: save choice
+  localStorage.setItem("theme", themes[currentTheme]);
+});
+
+
 // Start Phaser game
 function startGame() {
   const socket = io();
