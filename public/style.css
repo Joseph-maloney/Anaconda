@@ -3,7 +3,7 @@ body, html {
   padding: 0;
   height: 100%;
   font-family: Arial, sans-serif;
-  background: linear-gradient(to bottom, var(--bg-color), var(--sub-color));
+  background: var(--bg-color);
 }
 
 #lobby {
