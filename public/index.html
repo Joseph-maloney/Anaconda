@@ -1,18 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Anaconda</title>
+  <!-- Phaser library -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  
-<div id="game-container"></div>
 
-<!-- Phaser client code -->
-<script src="/client.js"></script>
+  <!-- Lobby UI -->
+  <div id="lobby">
+    <h2>Choose your skin:</h2>
+    <input type="text" id="nickname" placeholder="Your Name" />
 
-<!-- Socket.IO client -->
-<script src="/socket.io/socket.io.js"></script>
+    <div id="skins">
+      <button class="skin" data-color="red" style="background:red;"></button>
+      <button class="skin" data-color="blue" style="background:blue;"></button>
+      <button class="skin" data-color="green" style="background:green;"></button>
+    </div>
 
+    <button id="playBtn">Play</button>
+  </div>
+
+  <!-- Phaser game canvas -->
+  <div id="game-container" style="display:none;"></div>
+
+  <!-- Your client-side JS -->
+  <script src="/client.js"></script>
 </body>
 </html>
