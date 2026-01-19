@@ -24,8 +24,9 @@ body, html {
   padding: 12px;
   font-size: 1.5em;
   background-color: var(--main-color);
+  color: var(--sub-alt-color);
   border: none;
-  border-radius: 5px;
+  border-radius: 10px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
