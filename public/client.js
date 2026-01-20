@@ -106,38 +106,41 @@ window.addEventListener("DOMContentLoaded", () => {
       const tx = this.target.worldX;
       const ty = this.target.worldY;
 
-      const dist = Phaser.Math.Distance.Between(head.x, head.y, tx, ty);
+      const dx = tx - head.x;
+      const dy = ty - head.y;
 
-      // Prevent stall near cursor
-      const moveDist = Math.max(dist, minMoveDistance);
+      // Normalize direction manually
+      const length = Math.sqrt(dx * dx + dy * dy) || 1;
 
-      const angle = Phaser.Math.Angle.Between(head.x, head.y, tx, ty);
+      const dirX = dx / length;
+      const dirY = dy / length;
 
-      head.x += Math.cos(angle) * speed;
-      head.y += Math.sin(angle) * speed;
+      // Always move at constant speed
+      head.x += dirX * speed;
+      head.y += dirY * speed;
 
-      // Record movement history
+      // Store history
       history.unshift({ x: head.x, y: head.y });
 
-      // Move body smoothly
+      // Body follow
       for (let i = 1; i < snake.length; i++) {
         const point = history[i * spacing];
         if (point) {
-          snake[i].x += (point.x - snake[i].x) * 0.9;
-          snake[i].y += (point.y - snake[i].y) * 0.9;
+          snake[i].x += (point.x - snake[i].x) * 0.85;
+          snake[i].y += (point.y - snake[i].y) * 0.85;
         }
       }
 
-      history = history.slice(0, 3000);
+      history = history.slice(0, 5000);
 
       // Eat food
       foods.forEach((food, i) => {
-        if (Phaser.Math.Distance.Between(head.x, head.y, food.x, food.y) < 25) {
-          food.destroy();
+        if (Phaser.Math.Distance.Between(head.x, head.y, food.x, food.y) < 14) {
+         food.destroy();
           foods.splice(i, 1);
           growSnake(this);
-          spawnFood(this);
-        }
+         spawnFood(this);
+       }
       });
     }
     function spawnFood(scene) {
