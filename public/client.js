@@ -64,9 +64,10 @@ window.addEventListener("DOMContentLoaded", () => {
     let snake = [];
     let history = [];
     let foods = [];
-    const spacing = 8;
-    const speed = 3;
+    const spacing = 4;
+    const speed = 1;
     const worldSize = 3000;
+    const minMoveDistance = 40;
 
     function create() {
       this.physics.world.setBounds(0, 0, worldSize, worldSize);
@@ -81,13 +82,13 @@ window.addEventListener("DOMContentLoaded", () => {
       snake.push(head);
 
       // Body
-      for (let i = 0; i < 25; i++) {
-        const seg = this.add.circle(1500, 1500, 10, subColor);
+      for (let i = 0; i < 40; i++) {
+        const seg = this.add.circle(1500, 1500, 10, mainColor);
         snake.push(seg);
       }
 
       // Camera follow
-      this.cameras.main.startFollow(head, true, 0.05, 0.05);
+      this.cameras.main.startFollow(head, true, 1, 1);
 
       // Mouse movement
       this.input.on("pointermove", pointer => {
@@ -95,30 +96,35 @@ window.addEventListener("DOMContentLoaded", () => {
       });
 
       // Spawn food
-      for (let i = 0; i < 250; i++) spawnFood(this);
+      for (let i = 0; i < 300; i++) spawnFood(this);
     }
 
     function update() {
       const head = snake[0];
       if (!head || !this.target) return;
 
-      const angle = Phaser.Math.Angle.Between(
-        head.x, head.y,
-        this.target.worldX, this.target.worldY
-      );
+      const tx = this.target.worldX;
+      const ty = this.target.worldY;
+
+      const dist = Phaser.Math.Distance.Between(head.x, head.y, tx, ty);
+
+      // Prevent stall near cursor
+      const moveDist = Math.max(dist, minMoveDistance);
+
+      const angle = Phaser.Math.Angle.Between(head.x, head.y, tx, ty);
 
       head.x += Math.cos(angle) * speed;
       head.y += Math.sin(angle) * speed;
 
-      // Save path
+      // Record movement history
       history.unshift({ x: head.x, y: head.y });
 
-      // Move body
+      // Move body smoothly
       for (let i = 1; i < snake.length; i++) {
         const point = history[i * spacing];
         if (point) {
-          snake[i].x = point.x;
-          snake[i].y = point.y;
+          snake[i].x += (point.x - snake[i].x) * 0.9;
+          snake[i].y += (point.y - snake[i].y) * 0.9;
         }
       }
 
@@ -126,7 +132,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
       // Eat food
       foods.forEach((food, i) => {
-        if (Phaser.Math.Distance.Between(head.x, head.y, food.x, food.y) < 14) {
+        if (Phaser.Math.Distance.Between(head.x, head.y, food.x, food.y) < 25) {
           food.destroy();
           foods.splice(i, 1);
           growSnake(this);
