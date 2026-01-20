@@ -111,24 +111,20 @@ window.addEventListener("DOMContentLoaded", () => {
       let dx = tx - head.x;
       let dy = ty - head.y;
 
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      // Angle to mouse
+      const targetAngle = Math.atan2(dy, dx);
 
-      // If mouse is too close, reuse last direction
-      if (dist < 2) {
-        dx = lastDir.x;
-        dy = lastDir.y;
-      } 
-      else {
-        dx /= dist;
-        dy /= dist;
-        lastDir.x = dx;
-        lastDir.y = dy;
-      }
+      // Shortest angular difference
+      let delta = targetAngle - heading;
+      delta = Math.atan2(Math.sin(delta), Math.cos(delta)); // normalize to [-π, π]
 
-      // Always move
-      head.x += dx * speed;
-      head.y += dy * speed;
+      // Apply turn speed (limits turning rate)
+      heading += delta * turnSpeed;
 
+      // Move forward along heading
+      head.x += Math.cos(heading) * speed;
+      head.y += Math.sin(heading) * speed;
+      
       // History
       history.unshift({ x: head.x, y: head.y });
 
