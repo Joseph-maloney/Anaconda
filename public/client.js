@@ -99,6 +99,8 @@ window.addEventListener("DOMContentLoaded", () => {
       for (let i = 0; i < 300; i++) spawnFood(this);
     }
 
+    let lastDir = { x: 1, y: 0 }; // default movement to the right
+
     function update() {
       const head = snake[0];
       if (!head || !this.target) return;
@@ -106,42 +108,40 @@ window.addEventListener("DOMContentLoaded", () => {
       const tx = this.target.worldX;
       const ty = this.target.worldY;
 
-      const dx = tx - head.x;
-      const dy = ty - head.y;
+      let dx = tx - head.x;
+      let dy = ty - head.y;
 
-      // Normalize direction manually
-      const length = Math.sqrt(dx * dx + dy * dy) || 1;
+      const dist = Math.sqrt(dx * dx + dy * dy);
 
-      const dirX = dx / length;
-      const dirY = dy / length;
+      // If mouse is too close, reuse last direction
+      if (dist < 2) {
+        dx = lastDir.x;
+        dy = lastDir.y;
+      } 
+      else {
+        dx /= dist;
+        dy /= dist;
+        lastDir.x = dx;
+        lastDir.y = dy;
+      }
 
-      // Always move at constant speed
-      head.x += dirX * speed;
-      head.y += dirY * speed;
+      // Always move
+      head.x += dx * speed;
+      head.y += dy * speed;
 
-      // Store history
+      // History
       history.unshift({ x: head.x, y: head.y });
 
       // Body follow
       for (let i = 1; i < snake.length; i++) {
         const point = history[i * spacing];
         if (point) {
-          snake[i].x += (point.x - snake[i].x) * 0.85;
-          snake[i].y += (point.y - snake[i].y) * 0.85;
+          snake[i].x += (point.x - snake[i].x) * 0.8;
+          snake[i].y += (point.y - snake[i].y) * 0.8;
         }
       }
 
-      history = history.slice(0, 5000);
-
-      // Eat food
-      foods.forEach((food, i) => {
-        if (Phaser.Math.Distance.Between(head.x, head.y, food.x, food.y) < 14) {
-         food.destroy();
-          foods.splice(i, 1);
-          growSnake(this);
-         spawnFood(this);
-       }
-      });
+      history = history.slice(0, 3000);
     }
     function spawnFood(scene) {
       const color = Phaser.Display.Color.HexStringToColor(css("--main-color")).color;
@@ -156,7 +156,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function growSnake(scene) {
       const last = snake[snake.length - 1];
-      const color = Phaser.Display.Color.HexStringToColor(css("--sub-color")).color;
+      const color = Phaser.Display.Color.HexStringToColor(css("--main-color")).color;
       const seg = scene.add.circle(last.x, last.y, 10, color);
       snake.push(seg);
     }
