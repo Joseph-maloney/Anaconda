@@ -99,7 +99,8 @@ window.addEventListener("DOMContentLoaded", () => {
       for (let i = 0; i < 300; i++) spawnFood(this);
     }
 
-    let lastDir = { x: 1, y: 0 }; // default movement to the right
+    let heading = 0;               // radians
+    const turnSpeed = 0.05;
 
     function update() {
       const head = snake[0];
@@ -124,7 +125,7 @@ window.addEventListener("DOMContentLoaded", () => {
       // Move forward along heading
       head.x += Math.cos(heading) * speed;
       head.y += Math.sin(heading) * speed;
-      
+
       // History
       history.unshift({ x: head.x, y: head.y });
 
