@@ -5,7 +5,9 @@ window.addEventListener("DOMContentLoaded", () => {
   const lobby = document.getElementById("lobby");
   const gameContainer = document.getElementById("game-container");
 
-  //themes
+  // -------------------
+  // THEMES
+  // -------------------
   const themes = [
     "/mt_themes/arch.css",
     "/mt_themes/carbon.css",
@@ -26,7 +28,7 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   // -------------------
-  // Play button
+  // PLAY BUTTON
   // -------------------
   playBtn.addEventListener("click", () => {
     lobby.style.display = "none";
@@ -35,127 +37,117 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   // -------------------
-  // Utility: get CSS variable
-  // -------------------
-  function css(varName) {
-    return getComputedStyle(document.documentElement)
-    .getPropertyValue(varName)
-    .trim();
-  }
-
-  // -------------------
-  // Phaser Slither game
+  // GAME
   // -------------------
   function startGame() {
     const config = {
       type: Phaser.AUTO,
       width: window.innerWidth,
       height: window.innerHeight,
+      backgroundColor: "#111",
       parent: "game-container",
-      backgroundColor: css("--bg-color"),
-      physics: {
-        default: "arcade"
-      },
       scene: { create, update }
     };
 
     const game = new Phaser.Game(config);
 
+    // Snake system
     let snake = [];
-    let history = [];
-    let foods = [];
-    const spacing = 4;
-    const speed = 1;
-    const worldSize = 3000;
-    const minMoveDistance = 40;
+    const segmentDistance = 8;
+    const maxLength = 120;
+    const speed = 3.2;
+
+    let heading = 0;
+    const turnSpeed = 0.08;
+    const deadzone = 40;
+
+    let pointer;
+    let graphics;
+    let camera;
 
     function create() {
-      this.physics.world.setBounds(0, 0, worldSize, worldSize);
-      this.cameras.main.setBounds(0, 0, worldSize, worldSize);
+      pointer = this.input.activePointer;
+      graphics = this.add.graphics();
+      camera = this.cameras.main;
 
-      // Snake colors from theme
-      const mainColor = Phaser.Display.Color.HexStringToColor(css("--main-color")).color;
-      const subColor = Phaser.Display.Color.HexStringToColor(css("--sub-color")).color;
+      // Start snake
+      createSnake(0, 0, 60);
 
-      // Head
-      const head = this.add.circle(1500, 1500, 12, mainColor);
-      snake.push(head);
-
-      // Body
-      for (let i = 0; i < 40; i++) {
-        const seg = this.add.circle(1500, 1500, 10, mainColor);
-        snake.push(seg);
-      }
-
-      // Camera follow
-      this.cameras.main.startFollow(head, true, 1, 1);
-
-      // Mouse movement
-      this.input.on("pointermove", pointer => {
-        this.target = pointer;
-      });
-
-      // Spawn food
-      for (let i = 0; i < 300; i++) spawnFood(this);
+      // Lock camera to head
+      camera.startFollow({ x: 0, y: 0 }, true, 0.08, 0.08);
     }
 
-    let heading = 0;               // radians
-    const turnSpeed = 0.05;
+    function createSnake(x, y, length) {
+      snake = [];
+      for (let i = 0; i < length; i++) {
+        snake.push({ x, y });
+      }
+    }
 
     function update() {
+      if (!snake.length) return;
+
       const head = snake[0];
-      if (!head || !this.target) return;
+      const worldX = pointer.worldX;
+      const worldY = pointer.worldY;
 
-      const tx = this.target.worldX;
-      const ty = this.target.worldY;
+      // Direction toward pointer
+      const dx = worldX - head.x;
+      const dy = worldY - head.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
 
-      let dx = tx - head.x;
-      let dy = ty - head.y;
+      // Only turn if mouse far enough away
+      if (dist > deadzone) {
+        const targetAngle = Math.atan2(dy, dx);
+        let delta = targetAngle - heading;
+        delta = Math.atan2(Math.sin(delta), Math.cos(delta));
+        heading += delta * turnSpeed;
+      }
 
-      // Angle to mouse
-      const targetAngle = Math.atan2(dy, dx);
+      // Move head
+      const newHead = {
+        x: head.x + Math.cos(heading) * speed,
+        y: head.y + Math.sin(heading) * speed
+      };
 
-      // Shortest angular difference
-      let delta = targetAngle - heading;
-      delta = Math.atan2(Math.sin(delta), Math.cos(delta)); // normalize to [-π, π]
+      snake.unshift(newHead);
 
-      // Apply turn speed (limits turning rate)
-      heading += delta * turnSpeed;
-
-      // Move forward along heading
-      head.x += Math.cos(heading) * speed;
-      head.y += Math.sin(heading) * speed;
-
-      // History
-      history.unshift({ x: head.x, y: head.y });
-
-      // Body follow
+      // Enforce spacing between segments
       for (let i = 1; i < snake.length; i++) {
-        const point = history[i * spacing];
-        if (point) {
-          snake[i].x += (point.x - snake[i].x) * 0.8;
-          snake[i].y += (point.y - snake[i].y) * 0.8;
+        const prev = snake[i - 1];
+        const curr = snake[i];
+
+        const dx = prev.x - curr.x;
+        const dy = prev.y - curr.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+
+        if (d > segmentDistance) {
+          const t = segmentDistance / d;
+          curr.x = prev.x - dx * t;
+          curr.y = prev.y - dy * t;
         }
       }
 
-      history = history.slice(0, 3000);
-    }
-    function spawnFood(scene) {
-      const color = Phaser.Display.Color.HexStringToColor(css("--main-color")).color;
-      const food = scene.add.circle(
-        Phaser.Math.Between(0, worldSize),
-        Phaser.Math.Between(0, worldSize),
-        4,
-        color
-      );
-      foods.push(food);
+      // Limit length
+      if (snake.length > maxLength) {
+        snake.pop();
+      }
+
+      // Camera follows head exactly
+      camera.centerOn(newHead.x, newHead.y);
+
+      // Draw
+      render();
     }
 
-    function growSnake(scene) {
-      const last = snake[snake.length - 1];
-      const color = Phaser.Display.Color.HexStringToColor(css("--main-color")).color;
-      const seg = scene.add.circle(last.x, last.y, 10, color);
-      snake.push(seg);
+    function render() {
+      graphics.clear();
+
+      for (let i = snake.length - 1; i >= 0; i--) {
+        const size = i === 0 ? 8 : 6;
+        graphics.fillStyle(0x00ff88);
+        graphics.fillCircle(snake[i].x, snake[i].y, size);
+      }
     }
   }
 });
