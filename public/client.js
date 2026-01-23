@@ -88,7 +88,7 @@ window.addEventListener("DOMContentLoaded", () => {
       camera = this.cameras.main;
 
       cameraTarget = this.add.rectangle(0, 0, 1, 1, 0x000000, 0);
-      camera.startFollow({ x: 0, y: 0 }, true, 0.08, 0.08);
+      camera.startFollow({cameraTarget}, true, 0.08, 0.08);
 
       pointer = this.input.activePointer;
       graphics = this.add.graphics();
