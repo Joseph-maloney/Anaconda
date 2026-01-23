@@ -53,12 +53,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Snake system
     let snake = [];
-    const segmentDistance = 8;
-    const maxLength = 120;
-    const speed = 0.4;
+    const segmentDistance = 22;
+    const maxLength = 500;
+    const speed = 1;
 
     let heading = 0;
-    const turnSpeed = 0.08;
+    const turnSpeed = 0.005;
 
     let pointer;
     let graphics;
@@ -70,7 +70,7 @@ window.addEventListener("DOMContentLoaded", () => {
       camera = this.cameras.main;
 
       // Start snake
-      createSnake(0, 0, 60);
+      createSnake(0, 0, 100);
 
       // Lock camera to head
       camera.startFollow({ x: 0, y: 0 }, true, 0.08, 0.08);
@@ -141,7 +141,7 @@ window.addEventListener("DOMContentLoaded", () => {
       graphics.clear();
 
       for (let i = snake.length - 1; i >= 0; i--) {
-        const size = i === 0 ? 8 : 6;
+        const size = i === 0 ? 22 : 18;
         graphics.fillStyle(0x00ff88);
         graphics.fillCircle(snake[i].x, snake[i].y, size);
       }
