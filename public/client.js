@@ -14,6 +14,16 @@ window.addEventListener("DOMContentLoaded", () => {
     "/mt_themes/rainbow_trail.css",
   ];
 
+  function getCSSColor(varName) {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(varName)
+    .trim();
+  }
+
+  function cssToPhaserColor(cssColor) {
+  return parseInt(cssColor.replace("#", "0x"));
+  } 
+
   let currentTheme = 0;
   const savedTheme = localStorage.getItem("theme");
   if (savedTheme) {
@@ -44,12 +54,17 @@ window.addEventListener("DOMContentLoaded", () => {
       type: Phaser.AUTO,
       width: window.innerWidth,
       height: window.innerHeight,
-      backgroundColor: "#111",
       parent: "game-container",
       scene: { create, update }
     };
 
     const game = new Phaser.Game(config);
+
+    const world = {
+    x: 0,
+    y: 0,
+    radius: 2000
+    };
 
     // Snake system
     let snake = [];
@@ -65,6 +80,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let camera;
 
     function create() {
+      this.cameras.main.setBackgroundColor(getCSSColor("--bg-color"));
       pointer = this.input.activePointer;
       graphics = this.add.graphics();
       camera = this.cameras.main;
@@ -136,13 +152,17 @@ window.addEventListener("DOMContentLoaded", () => {
       // Draw
       render();
     }
-
+    
     function render() {
       graphics.clear();
 
+      graphics.lineStyle(6, 0xffffff, 0.8);
+      graphics.strokeCircle(world.x, world.y, world.radius);
+
+      const snakeColor = cssToPhaserColor(getCSSColor("--main-color"));
       for (let i = snake.length - 1; i >= 0; i--) {
         const size = i === 0 ? 22 : 18;
-        graphics.fillStyle(0x00ff88);
+        graphics.fillStyle(snakeColor);
         graphics.fillCircle(snake[i].x, snake[i].y, size);
       }
     }
