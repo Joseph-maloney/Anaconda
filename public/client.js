@@ -55,7 +55,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const startY = window.innerHeight / 2;
 
       cameraTarget = this.add.rectangle(startX, startY, 1, 1, 0x000000, 0);
-      camera.startFollow(cameraTarget, true, 0.12, 0.12);
+      camera.startFollow(cameraTarget, true, 1, 1);
 
       pointer = this.input.activePointer;
       graphics = this.add.graphics();
