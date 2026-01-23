@@ -93,7 +93,13 @@ window.addEventListener("DOMContentLoaded", () => {
       // Direction toward pointer
       const dx = worldX - head.x;
       const dy = worldY - head.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);      
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Only turn if mouse far enough away
+      const targetAngle = Math.atan2(dy, dx);
+      let delta = targetAngle - heading;
+      delta = Math.atan2(Math.sin(delta), Math.cos(delta));
+      heading += delta * turnSpeed;
 
       // Move head
       const newHead = {
