@@ -31,8 +31,8 @@ window.addEventListener("DOMContentLoaded", () => {
     let snake = [];
     const segmentDistance = 22;
     const maxLength = 500;
-    const speed = 3;
-    const turnSpeed = 0.05;
+    const speed = 1;
+    const turnSpeed = 0.015;
     const minTurnDistance = 10; // minimum distance before snake reacts to pointer
 
     let heading = 0;
