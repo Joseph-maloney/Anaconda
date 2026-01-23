@@ -73,7 +73,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const speed = 1;
 
     let heading = 0;
-    const turnSpeed = 0.005;
+    const turnSpeed = 0.02;
 
     let pointer;
     let graphics;
@@ -81,6 +81,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function create() {
       this.cameras.main.setBackgroundColor(getCSSColor("--bg-color"));
+      cameraTarget = this.add.rectangle(0, 0, 1, 1, 0x000000, 0);
+      this.cameras.main.startFollow(cameraTarget, true, 0.1, 0.1);
       pointer = this.input.activePointer;
       graphics = this.add.graphics();
       camera = this.cameras.main;
@@ -147,7 +149,9 @@ window.addEventListener("DOMContentLoaded", () => {
       }
 
       // Camera follows head exactly
-      camera.centerOn(newHead.x, newHead.y);
+      cameraTarget.x = newHead.x;
+      cameraTarget.y = newHead.y;
+
 
       // Draw
       render();
