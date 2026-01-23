@@ -55,11 +55,10 @@ window.addEventListener("DOMContentLoaded", () => {
     let snake = [];
     const segmentDistance = 8;
     const maxLength = 120;
-    const speed = 3.2;
+    const speed = 0.4;
 
     let heading = 0;
     const turnSpeed = 0.08;
-    const deadzone = 40;
 
     let pointer;
     let graphics;
@@ -94,15 +93,7 @@ window.addEventListener("DOMContentLoaded", () => {
       // Direction toward pointer
       const dx = worldX - head.x;
       const dy = worldY - head.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      // Only turn if mouse far enough away
-      if (dist > deadzone) {
-        const targetAngle = Math.atan2(dy, dx);
-        let delta = targetAngle - heading;
-        delta = Math.atan2(Math.sin(delta), Math.cos(delta));
-        heading += delta * turnSpeed;
-      }
+      const dist = Math.sqrt(dx * dx + dy * dy);      
 
       // Move head
       const newHead = {
