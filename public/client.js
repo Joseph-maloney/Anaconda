@@ -3,6 +3,31 @@ window.addEventListener("DOMContentLoaded", () => {
   const lobby = document.getElementById("lobby");
   const gameContainer = document.getElementById("game-container");
 
+  const themeBtn = document.getElementById("themeBtn");
+  const themeLink = document.getElementById("themeStylesheet");
+
+  // -------------------
+  // THEMES
+  // -------------------
+  const themes = [
+    "/mt_themes/arch.css",
+    "/mt_themes/carbon.css",
+    "/mt_themes/rainbow_trail.css",
+  ];
+
+  let currentTheme = 0;
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme) {
+    themeLink.href = savedTheme;
+    currentTheme = themes.indexOf(savedTheme);
+  }
+
+  themeBtn.addEventListener("click", () => {
+    currentTheme = (currentTheme + 1) % themes.length;
+    themeLink.href = themes[currentTheme];
+    localStorage.setItem("theme", themes[currentTheme]);
+  });
+
   playBtn.addEventListener("click", () => {
     lobby.style.display = "none";
     gameContainer.style.display = "block";
