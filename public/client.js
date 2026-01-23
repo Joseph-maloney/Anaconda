@@ -4,9 +4,6 @@ window.addEventListener("DOMContentLoaded", () => {
   const themeLink = document.getElementById("themeStylesheet");
   const lobby = document.getElementById("lobby");
   const gameContainer = document.getElementById("game-container");
-  let cameraTarget;
-  let camera;
-
 
   // -------------------
   // THEMES
@@ -81,23 +78,25 @@ window.addEventListener("DOMContentLoaded", () => {
     let pointer;
     let graphics;
     let camera;
+    let cameraTarget;
 
     function create() {
-      
+
       this.cameras.main.setBackgroundColor(getCSSColor("--bg-color"));
 
+      // Lock camera to head
       camera = this.cameras.main;
+
       cameraTarget = this.add.rectangle(0, 0, 1, 1, 0x000000, 0);
-      this.cameras.main.startFollow(cameraTarget, true, 0.1, 0.1);
+      camera.startFollow({ x: 0, y: 0 }, true, 0.08, 0.08);
+
       pointer = this.input.activePointer;
       graphics = this.add.graphics();
       
-
       // Start snake
       createSnake(0, 0, 100);
 
-      // Lock camera to head
-      camera.startFollow({ x: 0, y: 0 }, true, 0.08, 0.08);
+      
     }
 
     function createSnake(x, y, length) {
