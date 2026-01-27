@@ -151,14 +151,16 @@ window.addEventListener("DOMContentLoaded", () => {
       const angle = signedAngle(dir, toMouse);
 
       // --- 4. Apply turning with threshold
-      const threshold = 0.03;   // deadzone to prevent jitter
-      const turnRate = 0.05;    // curvature control
+      const threshold = 0.02;   // deadzone to prevent jitter
+      const turnRate = 0.02;    // curvature control
 
       if (angle > threshold) {
         dir = rotate(dir, turnRate);
+        heading = { x: dir.x, y: dir.y };
       }
       else if (angle < -threshold) {
         dir = rotate(dir, -turnRate);
+        heading = { x: dir.x, y: dir.y };
       }
 
       // --- 5. Move head forward
