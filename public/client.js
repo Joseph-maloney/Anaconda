@@ -60,11 +60,26 @@ window.addEventListener("DOMContentLoaded", () => {
     const turnSpeed = 0.015;
     const minTurnDistance = 10; // minimum distance before snake reacts to pointer
 
-    let heading = 0;
     let pointer;
     let graphics;
     let camera;
     let cameraTarget;
+
+    //Helper functions
+    function rotate(v, angle) {
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      return {
+        x: v.x * cos - v.y * sin,
+        y: v.x * sin + v.y * cos
+      };
+    }
+
+    function signedAngle(a, b) {
+      const dot = a.x * b.x + a.y * b.y;
+      const cross = a.x * b.y - a.y * b.x;
+      return Math.atan2(cross, dot);
+    }
 
     function create() {
       // Get theme color from CSS
@@ -188,22 +203,6 @@ window.addEventListener("DOMContentLoaded", () => {
         graphics.fillStyle(snakeColor);
         graphics.fillCircle(snake[i].x, snake[i].y, size);
       }
-    }
-    
-    //Helper functions
-    function rotate(v, angle) {
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      return {
-        x: v.x * cos - v.y * sin,
-        y: v.x * sin + v.y * cos
-      };
-    }
-
-    function signedAngle(a, b) {
-      const dot = a.x * b.x + a.y * b.y;
-      const cross = a.x * b.y - a.y * b.x;
-      return Math.atan2(cross, dot);
     }
   }
 
