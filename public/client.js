@@ -196,9 +196,25 @@ function update() {
   function getCSSColor(varName) {
     return getComputedStyle(document.documentElement).getPropertyValue(varName) || "#ffffff";
   }
-
+  
   function cssToPhaserColor(cssColor) {
     // Convert #rrggbb to Phaser 0xRRGGBB
     return parseInt(cssColor.replace("#", "0x"));
   }
+
+  function rotate(v, angle) {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    return {
+      x: v.x * cos - v.y * sin,
+      y: v.x * sin + v.y * cos
+    };
+  }
+
+  function signedAngle(a, b) {
+    const dot = a.x * b.x + a.y * b.y;
+    const cross = a.x * b.y - a.y * b.x;
+    return Math.atan2(cross, dot);
+  }
+  
 });
