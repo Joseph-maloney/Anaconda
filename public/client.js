@@ -56,9 +56,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let snake = [];
     const segmentDistance = 22;
     const maxLength = 500;
-    const speed = 1;
-    const turnSpeed = 0.015;
-    const minTurnDistance = 10; // minimum distance before snake reacts to pointer
+    const speed = 1.5;
 
     let pointer;
     let graphics;
@@ -109,7 +107,7 @@ window.addEventListener("DOMContentLoaded", () => {
       snake = [];
       for (let i = 0; i < length; i++) {
         snake.push({ 
-          x: x - i * segmentDistance,  // Space them out horizontally
+          x: x - 0.05*i * segmentDistance,  // Space them out horizontally
           y: y 
         });
       }
