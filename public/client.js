@@ -64,7 +64,8 @@ window.addEventListener("DOMContentLoaded", () => {
     let graphics;
     let camera;
     let cameraTarget;
-
+    let heading = { x: 1, y: 0 }; // Initial direction (moving right)
+    
     //Helper functions
     function rotate(v, angle) {
       const cos = Math.cos(angle);
@@ -130,11 +131,15 @@ window.addEventListener("DOMContentLoaded", () => {
         y: head.y - neck.y
       };
 
-      // Normalize direction
+      // Normalize direction - USE STORED HEADING IF TOO SMALL
       let len = Math.hypot(dir.x, dir.y);
-      if (len === 0) return;
-      dir.x /= len;
-      dir.y /= len;
+      if (len < 0.1) {  // If segments are too close, use last known heading
+        dir = { ...heading };
+      } else {
+        dir.x /= len;
+        dir.y /= len;
+        heading = { ...dir };  // Store valid heading for later
+      }
 
       // --- 2. Vector from head → mouse
       const toMouse = {
