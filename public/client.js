@@ -96,63 +96,83 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    function update() {
-      if (!snake.length) return;
+function update() {
+  if (snake.length < 2) return;
 
-      const head = snake[0];
+  const head = snake[0];
+  const neck = snake[1];
 
-      // World-space pointer
-      const worldX = pointer.worldX;
-      const worldY = pointer.worldY;
+  // Mouse in world space
+  const mouseX = pointer.worldX;
+  const mouseY = pointer.worldY;
 
-      // Compute vector to pointer
-      const dx = worldX - head.x;
-      const dy = worldY - head.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+  // --- 1. Current direction (from neck → head)
+  let dir = {
+    x: head.x - neck.x,
+    y: head.y - neck.y
+  };
 
-      // Only turn if pointer is far enough
-      if (dist > minTurnDistance) {
-        const targetAngle = Math.atan2(dy, dx);
-        let delta = targetAngle - heading;
-        delta = Math.atan2(Math.sin(delta), Math.cos(delta));
-        heading += delta * turnSpeed;
-      }
+  // Normalize direction
+  let len = Math.hypot(dir.x, dir.y);
+  if (len === 0) return;
+  dir.x /= len;
+  dir.y /= len;
 
-      // Move head
-      const newHead = {
-        x: head.x + Math.cos(heading) * speed,
-        y: head.y + Math.sin(heading) * speed
-      };
+  // --- 2. Vector from head → mouse
+  const toMouse = {
+    x: mouseX - head.x,
+    y: mouseY - head.y
+  };
 
-      snake.unshift(newHead);
+  // --- 3. Signed angle between vectors
+  const angle = signedAngle(dir, toMouse);
 
-      // Update body positions to maintain spacing
-      for (let i = 1; i < snake.length; i++) {
-        const prev = snake[i - 1];
-        const curr = snake[i];
+  // --- 4. Apply turning with threshold
+  const threshold = 0.03;   // deadzone to prevent jitter
+  const turnRate = 0.05;    // curvature control
 
-        const dx = prev.x - curr.x;
-        const dy = prev.y - curr.y;
-        const d = Math.sqrt(dx * dx + dy * dy);
+  if (angle > threshold) {
+    dir = rotate(dir, turnRate);
+  }
+  else if (angle < -threshold) {
+    dir = rotate(dir, -turnRate);
+  }
 
-        if (d > segmentDistance) {
-          const t = segmentDistance / d;
-          curr.x = prev.x - dx * t;
-          curr.y = prev.y - dy * t;
-        }
-      }
+  // --- 5. Move head forward
+  const newHead = {
+    x: head.x + dir.x * speed,
+    y: head.y + dir.y * speed
+  };
 
-      // Limit snake length
-      if (snake.length > maxLength) {
-        snake.pop();
-      }
+  snake.unshift(newHead);
 
-      // Move camera target to head
-      cameraTarget.x = newHead.x;
-      cameraTarget.y = newHead.y;
+  // --- 6. Enforce spacing between segments
+  for (let i = 1; i < snake.length; i++) {
+    const prev = snake[i - 1];
+    const curr = snake[i];
 
-      render();
+    const dx = prev.x - curr.x;
+    const dy = prev.y - curr.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+
+    if (d > segmentDistance) {
+      const t = segmentDistance / d;
+      curr.x = prev.x - dx * t;
+      curr.y = prev.y - dy * t;
     }
+  }
+
+  // --- 7. Cap length
+  if (snake.length > maxLength) {
+    snake.pop();
+  }
+
+  // --- 8. Camera lock
+  cameraTarget.x = newHead.x;
+  cameraTarget.y = newHead.y;
+
+  render();
+}
 
     function render() {
       graphics.clear();
