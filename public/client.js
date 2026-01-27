@@ -107,7 +107,10 @@ window.addEventListener("DOMContentLoaded", () => {
     function createSnake(x, y, length) {
       snake = [];
       for (let i = 0; i < length; i++) {
-        snake.push({ x, y });
+        snake.push({ 
+          x: x - i * segmentDistance,  // Space them out horizontally
+          y: y 
+        });
       }
     }
 
