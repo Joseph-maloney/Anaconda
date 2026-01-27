@@ -96,83 +96,83 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-function update() {
-  if (snake.length < 2) return;
+    function update() {
+      if (snake.length < 2) return;
 
-  const head = snake[0];
-  const neck = snake[1];
+      const head = snake[0];
+      const neck = snake[1];
 
-  // Mouse in world space
-  const mouseX = pointer.worldX;
-  const mouseY = pointer.worldY;
+      // Mouse in world space
+      const mouseX = pointer.worldX;
+      const mouseY = pointer.worldY;
 
-  // --- 1. Current direction (from neck → head)
-  let dir = {
-    x: head.x - neck.x,
-    y: head.y - neck.y
-  };
+      // --- 1. Current direction (from neck → head)
+      let dir = {
+        x: head.x - neck.x,
+        y: head.y - neck.y
+      };
 
-  // Normalize direction
-  let len = Math.hypot(dir.x, dir.y);
-  if (len === 0) return;
-  dir.x /= len;
-  dir.y /= len;
+      // Normalize direction
+      let len = Math.hypot(dir.x, dir.y);
+      if (len === 0) return;
+      dir.x /= len;
+      dir.y /= len;
 
-  // --- 2. Vector from head → mouse
-  const toMouse = {
-    x: mouseX - head.x,
-    y: mouseY - head.y
-  };
+      // --- 2. Vector from head → mouse
+      const toMouse = {
+        x: mouseX - head.x,
+        y: mouseY - head.y
+      };
 
-  // --- 3. Signed angle between vectors
-  const angle = signedAngle(dir, toMouse);
+      // --- 3. Signed angle between vectors
+      const angle = signedAngle(dir, toMouse);
 
-  // --- 4. Apply turning with threshold
-  const threshold = 0.03;   // deadzone to prevent jitter
-  const turnRate = 0.05;    // curvature control
+      // --- 4. Apply turning with threshold
+      const threshold = 0.03;   // deadzone to prevent jitter
+      const turnRate = 0.05;    // curvature control
 
-  if (angle > threshold) {
-    dir = rotate(dir, turnRate);
-  }
-  else if (angle < -threshold) {
-    dir = rotate(dir, -turnRate);
-  }
+      if (angle > threshold) {
+        dir = rotate(dir, turnRate);
+      }
+      else if (angle < -threshold) {
+        dir = rotate(dir, -turnRate);
+      }
 
-  // --- 5. Move head forward
-  const newHead = {
-    x: head.x + dir.x * speed,
-    y: head.y + dir.y * speed
-  };
+      // --- 5. Move head forward
+      const newHead = {
+        x: head.x + dir.x * speed,
+        y: head.y + dir.y * speed
+      };
 
-  snake.unshift(newHead);
+      snake.unshift(newHead);
 
-  // --- 6. Enforce spacing between segments
-  for (let i = 1; i < snake.length; i++) {
-    const prev = snake[i - 1];
-    const curr = snake[i];
+      // --- 6. Enforce spacing between segments
+      for (let i = 1; i < snake.length; i++) {
+        const prev = snake[i - 1];
+        const curr = snake[i];
 
-    const dx = prev.x - curr.x;
-    const dy = prev.y - curr.y;
-    const d = Math.sqrt(dx * dx + dy * dy);
+        const dx = prev.x - curr.x;
+        const dy = prev.y - curr.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
 
-    if (d > segmentDistance) {
-      const t = segmentDistance / d;
-      curr.x = prev.x - dx * t;
-      curr.y = prev.y - dy * t;
+        if (d > segmentDistance) {
+          const t = segmentDistance / d;
+          curr.x = prev.x - dx * t;
+          curr.y = prev.y - dy * t;
+        }
+      }
+
+      // --- 7. Cap length
+      if (snake.length > maxLength) {
+        snake.pop();
+      }
+
+      // --- 8. Camera lock
+      cameraTarget.x = newHead.x;
+      cameraTarget.y = newHead.y;
+
+      render();
     }
-  }
-
-  // --- 7. Cap length
-  if (snake.length > maxLength) {
-    snake.pop();
-  }
-
-  // --- 8. Camera lock
-  cameraTarget.x = newHead.x;
-  cameraTarget.y = newHead.y;
-
-  render();
-}
 
     function render() {
       graphics.clear();
@@ -189,6 +189,22 @@ function update() {
         graphics.fillCircle(snake[i].x, snake[i].y, size);
       }
     }
+    
+    //Helper functions
+    function rotate(v, angle) {
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      return {
+        x: v.x * cos - v.y * sin,
+        y: v.x * sin + v.y * cos
+      };
+    }
+
+    function signedAngle(a, b) {
+      const dot = a.x * b.x + a.y * b.y;
+      const cross = a.x * b.y - a.y * b.x;
+      return Math.atan2(cross, dot);
+    }
   }
 
   // ----------------------
@@ -200,21 +216,6 @@ function update() {
   function cssToPhaserColor(cssColor) {
     // Convert #rrggbb to Phaser 0xRRGGBB
     return parseInt(cssColor.replace("#", "0x"));
-  }
-
-  function rotate(v, angle) {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    return {
-      x: v.x * cos - v.y * sin,
-      y: v.x * sin + v.y * cos
-    };
-  }
-
-  function signedAngle(a, b) {
-    const dot = a.x * b.x + a.y * b.y;
-    const cross = a.x * b.y - a.y * b.x;
-    return Math.atan2(cross, dot);
   }
   
 });
