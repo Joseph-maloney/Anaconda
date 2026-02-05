@@ -165,7 +165,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const angle = signedAngle(dir, toMouse);
 
         // --- 4. Turn the full angle, but cap at max turn rate
-        const maxTurnRate = 0.08;  // Maximum turn per frame
+        const maxTurnRate = 0.02;  // Maximum turn per frame
         const turnAmount = Math.max(-maxTurnRate, Math.min(maxTurnRate, angle));
 
         if (Math.abs(turnAmount) > 0.01) {  // Small threshold to avoid jitter
