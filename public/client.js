@@ -134,11 +134,9 @@ window.addEventListener("DOMContentLoaded", () => {
       const mouseDelta = Math.hypot(mouseX - lastMouseX, mouseY - lastMouseY);
 
       // Always update last mouse position
+      const mouseHasMoved = mouseDelta > 1;
       lastMouseX = mouseX;
       lastMouseY = mouseY;
-
-      // But only mark as "recently moved" if delta is significant
-      mouseMovedRecently = mouseDelta > 1;
 
       // --- 1. Current direction (from neck → head)
       let dir = {
@@ -146,7 +144,7 @@ window.addEventListener("DOMContentLoaded", () => {
         y: head.y - neck.y
       };
 
-      // Normalize direction - USE STORED HEADING IF TOO SMALL
+      // Normalize direction
       let len = Math.hypot(dir.x, dir.y);
       if (len < 0.1) {  // If segments are too close, use last known heading
         dir = { ...heading };
@@ -157,7 +155,7 @@ window.addEventListener("DOMContentLoaded", () => {
       }
 
       // --- 2. Vector from head → mouse
-      if (mouseMovedRecently) {
+      if (mouseHasMoved) {
         const toMouse = {
           x: mouseX - head.x,
           y: mouseY - head.y
@@ -167,7 +165,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const angle = signedAngle(dir, toMouse);
 
         // --- 4. Turn the full angle, but cap at max turn rate
-        const maxTurnRate = 0.05;  // Maximum turn per frame
+        const maxTurnRate = 0.08;  // Maximum turn per frame
         const turnAmount = Math.max(-maxTurnRate, Math.min(maxTurnRate, angle));
 
         if (Math.abs(turnAmount) > 0.01) {  // Small threshold to avoid jitter
