@@ -132,13 +132,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
       // Check if mouse has moved
       const mouseDelta = Math.hypot(mouseX - lastMouseX, mouseY - lastMouseY);
-      if (mouseDelta > 1) {  // Mouse moved more than 1 pixel
-        mouseMovedRecently = true;
-        lastMouseX = mouseX;
-        lastMouseY = mouseY;
-      } else {
-        mouseMovedRecently = false;
-      }
+
+      // Always update last mouse position
+      lastMouseX = mouseX;
+      lastMouseY = mouseY;
+
+      // But only mark as "recently moved" if delta is significant
+      mouseMovedRecently = mouseDelta > 1;
 
       // --- 1. Current direction (from neck → head)
       let dir = {
