@@ -130,14 +130,6 @@ window.addEventListener("DOMContentLoaded", () => {
       const mouseX = pointer.worldX;
       const mouseY = pointer.worldY;
 
-      // Check if mouse has moved
-      const mouseDelta = Math.hypot(mouseX - lastMouseX, mouseY - lastMouseY);
-
-      // Always update last mouse position
-      const mouseHasMoved = mouseDelta > 1;
-      lastMouseX = mouseX;
-      lastMouseY = mouseY;
-
       // --- 1. Current direction (from neck → head)
       let dir = {
         x: head.x - neck.x,
@@ -155,20 +147,22 @@ window.addEventListener("DOMContentLoaded", () => {
       }
 
       // --- 2. Vector from head → mouse
-      if (mouseHasMoved) {
-        const toMouse = {
-          x: mouseX - head.x,
-          y: mouseY - head.y
-        };
+      const toMouse = {
+        x: mouseX - head.x,
+        y: mouseY - head.y
+      };
 
-        // --- 3. Signed angle between vectors
+      const distToMouse = Math.hypot(toMouse.x, toMouse.y);
+
+      // --- 3. Signed angle between vectors
+      if (distToMouse > 50) {
         const angle = signedAngle(dir, toMouse);
 
         // --- 4. Turn the full angle, but cap at max turn rate
         const maxTurnRate = 0.02;  // Maximum turn per frame
         const turnAmount = Math.max(-maxTurnRate, Math.min(maxTurnRate, angle));
 
-        if (Math.abs(turnAmount) > 0.01) {  // Small threshold to avoid jitter
+        if (Math.abs(turnAmount) > 0.001) {  // Small threshold to avoid jitter
           dir = rotate(dir, turnAmount);
           heading = { x: dir.x, y: dir.y };
         }
