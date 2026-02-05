@@ -127,8 +127,10 @@ window.addEventListener("DOMContentLoaded", () => {
       const neck = snake[1];
 
       // Mouse in world space
-      const mouseX = pointer.worldX;
-      const mouseY = pointer.worldY;
+      const mouseScreenX = pointer.x;
+      const mouseScreenY = pointer.y;
+      const mouseX = mouseScreenX + camera.scrollX;
+      const mouseY = mouseScreenY + camera.scrollY;
 
       // --- 1. Current direction (from neck → head)
       let dir = {
