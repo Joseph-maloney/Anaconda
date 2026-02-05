@@ -166,16 +166,12 @@ window.addEventListener("DOMContentLoaded", () => {
         // --- 3. Signed angle between vectors
         const angle = signedAngle(dir, toMouse);
 
-        // --- 4. Apply turning with threshold
-        const threshold = 0.02;   // deadzone to prevent jitter
-        const turnRate = 0.02;    // curvature control
+        // --- 4. Turn the full angle, but cap at max turn rate
+        const maxTurnRate = 0.05;  // Maximum turn per frame
+        const turnAmount = Math.max(-maxTurnRate, Math.min(maxTurnRate, angle));
 
-        if (angle > threshold) {
-          dir = rotate(dir, turnRate);
-          heading = { x: dir.x, y: dir.y };
-        }
-        else if (angle < -threshold) {
-          dir = rotate(dir, -turnRate);
+        if (Math.abs(turnAmount) > 0.01) {  // Small threshold to avoid jitter
+          dir = rotate(dir, turnAmount);
           heading = { x: dir.x, y: dir.y };
         }
       }
