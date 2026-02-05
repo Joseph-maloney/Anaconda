@@ -63,6 +63,9 @@ window.addEventListener("DOMContentLoaded", () => {
     let camera;
     let cameraTarget;
     let heading = { x: 1, y: 0 }; // Initial direction (moving right)
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+    let mouseMovedRecently = false;
     
     //Helper functions
     function rotate(v, angle) {
@@ -99,6 +102,10 @@ window.addEventListener("DOMContentLoaded", () => {
       pointer = this.input.activePointer;
       graphics = this.add.graphics();
 
+      // Initialize mouse position
+      lastMouseX = pointer.worldX;
+      lastMouseY = pointer.worldY;
+
       // Initialize snake
       createSnake(startX, startY, 20); // start with 20 segments
     }
@@ -123,6 +130,16 @@ window.addEventListener("DOMContentLoaded", () => {
       const mouseX = pointer.worldX;
       const mouseY = pointer.worldY;
 
+      // Check if mouse has moved
+      const mouseDelta = Math.hypot(mouseX - lastMouseX, mouseY - lastMouseY);
+      if (mouseDelta > 1) {  // Mouse moved more than 1 pixel
+        mouseMovedRecently = true;
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+      } else {
+        mouseMovedRecently = false;
+      }
+
       // --- 1. Current direction (from neck → head)
       let dir = {
         x: head.x - neck.x,
@@ -140,9 +157,11 @@ window.addEventListener("DOMContentLoaded", () => {
       }
 
       // --- 2. Vector from head → mouse
-      const toMouse = {
-        x: mouseX - head.x,
-        y: mouseY - head.y
+      if (mouseMovedRecently) {
+        const toMouse = {
+          x: mouseX - head.x,
+          y: mouseY - head.y
+        }
       };
 
       // --- 3. Signed angle between vectors
