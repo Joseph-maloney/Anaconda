@@ -181,8 +181,9 @@ window.addEventListener("DOMContentLoaded", () => {
         // Just move the head, don't add a new segment
         snake[0].x = newHead.x;
         snake[0].y = newHead.y;
+        snake.pop()
       }
-      
+
       // --- 6. Enforce spacing between segments
       for (let i = 1; i < snake.length; i++) {
         const prev = snake[i - 1];
