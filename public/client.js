@@ -54,7 +54,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Snake settings
     let snake = [];
-    const segmentDistance = 22;
+    const segmentDistance = 40;
     const maxLength = 500;
     const speed = 1.5;
 
@@ -63,9 +63,6 @@ window.addEventListener("DOMContentLoaded", () => {
     let camera;
     let cameraTarget;
     let heading = { x: 1, y: 0 }; // Initial direction (moving right)
-    let lastMouseX = 0;
-    let lastMouseY = 0;
-    let mouseMovedRecently = false;
     
     //Helper functions
     function rotate(v, angle) {
