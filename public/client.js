@@ -104,7 +104,7 @@ window.addEventListener("DOMContentLoaded", () => {
       lastMouseY = pointer.worldY;
 
       // Initialize snake
-      createSnake(startX, startY, 20); // start with 20 segments
+      createSnake(startX, startY, 67); // start with 20 segments
     }
 
     function createSnake(x, y, length) {
