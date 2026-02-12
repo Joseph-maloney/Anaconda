@@ -54,9 +54,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Snake settings
     let snake = [];
-    const segmentDistance = 20;
+    const segmentDistance = 12;
     const maxLength = 500;
-    const speed = 1;
+    const speed = 3;
 
     let pointer;
     let graphics;
@@ -158,7 +158,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const angle = signedAngle(dir, toMouse);
 
         // --- 4. Turn the full angle, but cap at max turn rate
-        const maxTurnRate = 0.05;  // Maximum turn per frame
+        const maxTurnRate = 0.01;  // Maximum turn per frame
         const turnAmount = Math.max(-maxTurnRate, Math.min(maxTurnRate, angle));
 
         if (Math.abs(turnAmount) > 0.001) {  // Small threshold to avoid jitter
