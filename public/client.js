@@ -54,7 +54,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Snake settings
     let snake = [];
-    const segmentDistance = 1000;
+    const segmentDistance = 10;
     const maxLength = 500;
     const speed = 0.5;
 
