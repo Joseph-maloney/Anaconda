@@ -173,9 +173,16 @@ window.addEventListener("DOMContentLoaded", () => {
         y: head.y + dir.y * speed
       };
 
-      snake.unshift(newHead);
-
-      // --- 6. Enforce spacing between segments
+      // Only add new segment if head has moved far enough from neck
+      const distFromNeck = Math.hypot(newHead.x - neck.x, newHead.y - neck.y);
+      if (distFromNeck >= segmentDistance) {
+        snake.unshift(newHead);
+      } else {
+        // Just move the head, don't add a new segment
+        snake[0].x = newHead.x;
+        snake[0].y = newHead.y;
+      }
+      
       // --- 6. Enforce spacing between segments
       for (let i = 1; i < snake.length; i++) {
         const prev = snake[i - 1];
@@ -186,7 +193,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const d = Math.sqrt(dx * dx + dy * dy);
 
         // ALWAYS enforce exact distance, not just when too far
-        if (d !== segmentDistance) {
+      if (d > segmentDistance) {
           const t = segmentDistance / d;
           curr.x = prev.x - dx * t;
           curr.y = prev.y - dy * t;
