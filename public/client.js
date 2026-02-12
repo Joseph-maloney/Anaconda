@@ -177,11 +177,11 @@ window.addEventListener("DOMContentLoaded", () => {
       const distFromNeck = Math.hypot(newHead.x - neck.x, newHead.y - neck.y);
       if (distFromNeck >= segmentDistance) {
         snake.unshift(newHead);
+        snake.pop()
       } else {
         // Just move the head, don't add a new segment
         snake[0].x = newHead.x;
         snake[0].y = newHead.y;
-        snake.pop()
       }
 
       // --- 6. Enforce spacing between segments
