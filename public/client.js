@@ -56,9 +56,10 @@ window.addEventListener("DOMContentLoaded", () => {
     let snake = [];
     const segmentDistance = 12.5;
     const maxLength = 500;
-    const speed = 1.25;
+    const normalSpeed = 1.25;
+    const boostSpeed = 2;
     const maxTurnRate = 0.075;  // Maximum turn per frame
-    const drift = 0.05;
+    const drift = 0.1;
     const startLength = 50;
 
     let pointer;
@@ -170,6 +171,10 @@ window.addEventListener("DOMContentLoaded", () => {
       }
 
       // --- 5. Move head forward
+      let speed = normalSpeed;
+      if (pointer.isDown) {
+        speed = boostSpeed;
+      }
       const newHead = {
         x: head.x + dir.x * speed,
         y: head.y + dir.y * speed
@@ -194,13 +199,16 @@ window.addEventListener("DOMContentLoaded", () => {
         const last = snake[i - 1];
         const next = snake[i + 1];
         const curr = snake[i];
-        const ang1 = Math.atan2((last.x) - (next.x),(last.y) - (next.y));
-        const k = Math.sin(Math.atan2(((last.x - curr.x) * Math.cos(ang1) + (last.y - curr.y) * Math.sin(ang1)),((curr.x - last.x) * Math.sin(ang1) - (curr.y - last.y) * Math.cos(ang1))));
-        adjustedSnake[i].x = (drift * k * (next.y - last.y)) / (Math.hypot((last.x - next.x),(last.y-next.y))) + curr.x;
-        adjustedSnake[i].y = (drift * k * (last.x - next.x)) / (Math.hypot((last.x - next.x),(last.y-next.y))) + curr.y;
+        const a = { x: next.x - last.x, y: next.y - last.y };
+        const b = { x: curr.x - last.x, y: curr.y - last.y };
+        const theta = signedAngle(a, b);
+        const v = {
+          x: (next.y - last.y) / Math.hypot((next.y - last.y),(next.x - last.x)),
+          y: (last.x - next.x) / Math.hypot((next.y - last.y),(next.x - last.x))
+        };
+        adjustedSnake[i].x = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.x) + curr.x;
+        adjustedSnake[i].y = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.y) + curr.y;
       }
-      snake = adjustedSnake;
-
       snake = adjustedSnake;
 
       // --- 6. Enforce spacing between segments
