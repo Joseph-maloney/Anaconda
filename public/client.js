@@ -54,12 +54,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Snake settings
     let snake = [];
-    const segmentDistance = 10;
+    const segmentDistance = 12.5;
     const maxLength = 500;
-    const speed = 2;
+    const speed = 1.25;
     const maxTurnRate = 0.075;  // Maximum turn per frame
     const drift = 0.05;
-    const startLength = 300;
+    const startLength = 50;
 
     let pointer;
     let graphics;
@@ -188,7 +188,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
       // Turn radius shrinks - coils drift
 
-      let adjustedSnake = snake; 
+      let adjustedSnake = snake.map(seg => ({ x: seg.x, y: seg.y })); // Create a copy
+
       for (let i = 2; i < snake.length - 1; i++) {
         const last = snake[i - 1];
         const next = snake[i + 1];
@@ -198,6 +199,8 @@ window.addEventListener("DOMContentLoaded", () => {
         adjustedSnake[i].x = (drift * k * (next.y - last.y)) / (Math.hypot((last.x - next.x),(last.y-next.y))) + curr.x;
         adjustedSnake[i].y = (drift * k * (last.x - next.x)) / (Math.hypot((last.x - next.x),(last.y-next.y))) + curr.y;
       }
+      snake = adjustedSnake;
+
       snake = adjustedSnake;
 
       // --- 6. Enforce spacing between segments
