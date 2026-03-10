@@ -54,9 +54,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Snake settings
     let snake = [];
-    const segmentDistance = 20;
+    const segmentDistance = 10;
     const maxLength = 500;
-    const speed = 3;
+    const speed = 2;
+    const maxTurnRate = 0.075;  // Maximum turn per frame
+    const drift = 0.05;
+    const startLength = 300;
 
     let pointer;
     let graphics;
@@ -104,15 +107,15 @@ window.addEventListener("DOMContentLoaded", () => {
       lastMouseY = pointer.worldY;
 
       // Initialize snake
-      createSnake(startX, startY, 67); // start with 20 segments
+      createSnake(startX, startY, startLength);
     }
 
     function createSnake(x, y, length) {
       snake = [];
       for (let i = 0; i < length; i++) {
         snake.push({ 
-          x: x - 0.2*i * segmentDistance,  // Space them out horizontally
-          y: y 
+          x: x,
+          y: y + i * segmentDistance
         });
       }
     }
@@ -158,7 +161,6 @@ window.addEventListener("DOMContentLoaded", () => {
         const angle = signedAngle(dir, toMouse);
 
         // --- 4. Turn the full angle, but cap at max turn rate
-        const maxTurnRate = 0.1;  // Maximum turn per frame
         const turnAmount = Math.max(-maxTurnRate, Math.min(maxTurnRate, angle));
 
         if (Math.abs(turnAmount) > 0.001) {  // Small threshold to avoid jitter
@@ -183,6 +185,20 @@ window.addEventListener("DOMContentLoaded", () => {
         snake[0].x = newHead.x;
         snake[0].y = newHead.y;
       }
+
+      // Turn radius shrinks - coils drift
+
+      let adjustedSnake = snake; 
+      for (let i = 2; i < snake.length - 1; i++) {
+        const last = snake[i - 1];
+        const next = snake[i + 1];
+        const curr = snake[i];
+        const ang1 = Math.atan2((last.x) - (next.x),(last.y) - (next.y));
+        const k = Math.sin(Math.atan2(((last.x - curr.x) * Math.cos(ang1) + (last.y - curr.y) * Math.sin(ang1)),((curr.x - last.x) * Math.sin(ang1) - (curr.y - last.y) * Math.cos(ang1))));
+        adjustedSnake[i].x = (drift * k * (next.y - last.y)) / (Math.hypot((last.x - next.x),(last.y-next.y))) + curr.x;
+        adjustedSnake[i].y = (drift * k * (last.x - next.x)) / (Math.hypot((last.x - next.x),(last.y-next.y))) + curr.y;
+      }
+      snake = adjustedSnake;
 
       // --- 6. Enforce spacing between segments
       for (let i = 1; i < snake.length; i++) {
@@ -223,7 +239,7 @@ window.addEventListener("DOMContentLoaded", () => {
       // Draw snake
       const snakeColor = cssToPhaserColor(getCSSColor("--main-color"));
       for (let i = snake.length - 1; i >= 0; i--) {
-        const size = i === 0 ? 28 : 22; // head bigger than body
+        const size = i === 0 ? 22.5 : 22; // head bigger than body
         graphics.fillStyle(snakeColor);
         graphics.fillCircle(snake[i].x, snake[i].y, size);
       }
