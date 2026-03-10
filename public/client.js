@@ -111,7 +111,7 @@ window.addEventListener("DOMContentLoaded", () => {
       snake = [];
       for (let i = 0; i < length; i++) {
         snake.push({ 
-          x: x - 0.05*i * segmentDistance,  // Space them out horizontally
+          x: x - 0.2*i * segmentDistance,  // Space them out horizontally
           y: y 
         });
       }
