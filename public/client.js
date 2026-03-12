@@ -59,7 +59,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const normalSpeed = 1.25;
     const boostSpeed = 2;
     const maxTurnRate = 0.075;  // Maximum turn per frame
-    const drift = 0.1;
+    const drift = 0.05;
     const startLength = 50;
 
     let pointer;
