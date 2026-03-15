@@ -58,7 +58,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const maxLength = 500;
     const normalSpeed = 1.25;
     const boostSpeed = 2;
-    const maxTurnRate = 0.075;  // Maximum turn per frame
+    const maxTurnRate = 0.2;  // Maximum turn per frame
     const drift = 0.05;
     const startLength = 50;
 
@@ -175,65 +175,86 @@ window.addEventListener("DOMContentLoaded", () => {
       if (pointer.isDown) {
         speed = boostSpeed;
       }
+
       const newHead = {
         x: head.x + dir.x * speed,
         y: head.y + dir.y * speed
       };
 
-      // Only add new segment if head has moved far enough from neck
-      const distFromNeck = Math.hypot(newHead.x - neck.x, newHead.y - neck.y);
-      if (distFromNeck >= segmentDistance) {
-        snake.unshift(newHead);
-        snake.pop()
-      } else {
-        // Just move the head, don't add a new segment
-        snake[0].x = newHead.x;
-        snake[0].y = newHead.y;
-      }
+      // Update head position
+      snake[0].x = newHead.x;
+      snake[0].y = newHead.y;
 
-      // Turn radius shrinks - coils drift
+      // --- 6. Move body (each segment follows the one in front)
+      let movedSnake = snake.map(seg => ({ x: seg.x, y: seg.y })); // Create a copy
 
-      let adjustedSnake = snake.map(seg => ({ x: seg.x, y: seg.y })); // Create a copy
-
-      for (let i = 2; i < snake.length - 1; i++) {
-        const last = snake[i - 1];
-        const next = snake[i + 1];
-        const curr = snake[i];
-        const a = { x: next.x - last.x, y: next.y - last.y };
-        const b = { x: curr.x - last.x, y: curr.y - last.y };
-        const theta = signedAngle(a, b);
-        const v = {
-          x: (next.y - last.y) / Math.hypot((next.y - last.y),(next.x - last.x)),
-          y: (last.x - next.x) / Math.hypot((next.y - last.y),(next.x - last.x))
-        };
-        adjustedSnake[i].x = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.x) + curr.x;
-        adjustedSnake[i].y = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.y) + curr.y;
-      }
-      snake = adjustedSnake;
-
-      // --- 6. Enforce spacing between segments
       for (let i = 1; i < snake.length; i++) {
-        const prev = snake[i - 1];
-        const curr = snake[i];
+        const lead = snake[i - 1];
+        const follow = snake[i];
+        
+        const dx = lead.x - follow.x;
+        const dy = lead.y - follow.y;
+        const dist = Math.hypot(dx, dy);
+        
+        if (dist > 0) {
+          // Calculate how much this segment needs to move to maintain segmentDistance
+          const targetDist = segmentDistance;
+          const moveAmount = dist - targetDist;
+          
+          const segDir = {
+            x: dx / dist,
+            y: dy / dist
+          };
 
-        const dx = prev.x - curr.x;
-        const dy = prev.y - curr.y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-
-        // ALWAYS enforce exact distance, not just when too far
-      if (d > segmentDistance) {
-          const t = segmentDistance / d;
-          curr.x = prev.x - dx * t;
-          curr.y = prev.y - dy * t;
+          // Move just enough to maintain spacing (can be more or less than head speed)
+          movedSnake[i].x = follow.x + segDir.x * moveAmount;
+          movedSnake[i].y = follow.y + segDir.y * moveAmount;
         }
       }
+      snake = movedSnake;
 
-      // --- 7. Cap length
+      // --- 7. Enforce spacing between segments
+      // for (let i = 1; i < snake.length; i++) {
+      //   const prev = snake[i - 1];
+      //   const curr = snake[i];
+
+      //   const dx = prev.x - curr.x;
+      //   const dy = prev.y - curr.y;
+      //   const d = Math.hypot(dx, dy);
+
+      //   if (d > segmentDistance) {
+      //     const t = segmentDistance / d;
+      //     curr.x = prev.x - dx * t;
+      //     curr.y = prev.y - dy * t;
+      //   }
+      // }
+
+      // --- 8. Turn radius shrinks - coils drift
+
+      // let adjustedSnake = snake.map(seg => ({ x: seg.x, y: seg.y })); // Create a copy
+
+      // for (let i = 2; i < snake.length - 1; i++) {
+      //   const last = snake[i - 1];
+      //   const next = snake[i + 1];
+      //   const curr = snake[i];
+      //   const a = { x: next.x - last.x, y: next.y - last.y };
+      //   const b = { x: curr.x - last.x, y: curr.y - last.y };
+      //   const theta = signedAngle(a, b);
+      //   const v = {
+      //     x: (next.y - last.y) / Math.hypot((next.y - last.y),(next.x - last.x)),
+      //     y: (last.x - next.x) / Math.hypot((next.y - last.y),(next.x - last.x))
+      //   };
+      //   adjustedSnake[i].x = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.x) + curr.x;
+      //   adjustedSnake[i].y = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.y) + curr.y;
+      // }
+      // snake = adjustedSnake;
+
+      // --- 9. Cap length
       if (snake.length > maxLength) {
         snake.pop();
       }
 
-      // --- 8. Camera lock
+      // --- 10. Camera lock
       cameraTarget.x = newHead.x;
       cameraTarget.y = newHead.y;
 
