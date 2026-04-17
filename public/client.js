@@ -54,13 +54,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Snake settings
     let snake = [];
+    let path = [];
+    let totalPathLength = 0;
+
     const segmentDistance = 12.5;
     const maxLength = 500;
     const normalSpeed = 1.25;
     const boostSpeed = 2;
-    const maxTurnRate = 0.2;  // Maximum turn per frame
-    const drift = 0.05;
-    const startLength = 50;
+    const maxTurnRate = 0.15;  //  jkMaximum turn per frame
+    const drift = 0.1;
+    const startLength = 100;
 
     let pointer;
     let graphics;
@@ -113,11 +116,30 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function createSnake(x, y, length) {
       snake = [];
+      path = [];
+      totalPathLength = 0;
+
       for (let i = 0; i < length; i++) {
         snake.push({ 
           x: x,
-          y: y + i * segmentDistance
+          y: y + i * segmentDistance,
+          z: 0
         });
+      }
+
+      // Build path from tail → head (IMPORTANT)
+      for (let i = length - 1; i >= 0; i--) {
+        const px = x;
+        const py = y + i * segmentDistance;
+
+        if (path.length > 0) {
+          const last = path[path.length - 1];
+          const dx = px - last.x;
+          const dy = py - last.y;
+          totalPathLength += Math.hypot(dx, dy);
+        }
+
+        path.push({ x: px, y: py, dx: 0, dy: 0 });
       }
     }
 
@@ -128,28 +150,25 @@ window.addEventListener("DOMContentLoaded", () => {
       const neck = snake[1];
 
       // Mouse in world space
-      const mouseScreenX = pointer.x;
-      const mouseScreenY = pointer.y;
-      const mouseX = mouseScreenX + camera.scrollX;
-      const mouseY = mouseScreenY + camera.scrollY;
+      const mouseX = pointer.x + camera.scrollX;
+      const mouseY = pointer.y + camera.scrollY;
 
-      // --- 1. Current direction (from neck → head)
+      // --- 1. Direction head → neck
       let dir = {
         x: head.x - neck.x,
         y: head.y - neck.y
       };
 
-      // Normalize direction
       let len = Math.hypot(dir.x, dir.y);
-      if (len < 0.1) {  // If segments are too close, use last known heading
+      if (len < 0.0001) {
         dir = { ...heading };
       } else {
         dir.x /= len;
         dir.y /= len;
-        heading = { ...dir };  // Store valid heading for later
+        heading = { ...dir };
       }
 
-      // --- 2. Vector from head → mouse
+      // --- 2. Steering toward mouse
       const toMouse = {
         x: mouseX - head.x,
         y: mouseY - head.y
@@ -157,104 +176,155 @@ window.addEventListener("DOMContentLoaded", () => {
 
       const distToMouse = Math.hypot(toMouse.x, toMouse.y);
 
-      // --- 3. Signed angle between vectors
       if (distToMouse > 50) {
         const angle = signedAngle(dir, toMouse);
-
-        // --- 4. Turn the full angle, but cap at max turn rate
         const turnAmount = Math.max(-maxTurnRate, Math.min(maxTurnRate, angle));
 
-        if (Math.abs(turnAmount) > 0.001) {  // Small threshold to avoid jitter
+        if (Math.abs(turnAmount) > 0.001) {
           dir = rotate(dir, turnAmount);
-          heading = { x: dir.x, y: dir.y };
+          heading = { ...dir };
         }
       }
 
-      // --- 5. Move head forward
-      let speed = normalSpeed;
-      if (pointer.isDown) {
-        speed = boostSpeed;
-      }
+      // --- 3. Move head
+      const speed = pointer.isDown ? boostSpeed : normalSpeed;
 
       const newHead = {
         x: head.x + dir.x * speed,
         y: head.y + dir.y * speed
       };
 
-      // Update head position
       snake[0].x = newHead.x;
       snake[0].y = newHead.y;
 
-      // --- 6. Move body (each segment follows the one in front)
-      let movedSnake = snake.map(seg => ({ x: seg.x, y: seg.y })); // Create a copy
+      // --- 4. Add to path
+      const newPoint = { x: newHead.x, y: newHead.y, dx: 0, dy: 0 };
+
+      const last = path[path.length - 1];
+      if (last) {
+        totalPathLength += Math.hypot(newPoint.x - last.x, newPoint.y - last.y);
+      }
+
+      path.push(newPoint);
+
+      // --- 5. Drift (velocity field ONLY, no geometry mutation)
+      for (let i = path.length - 2; i >= 1; i--) {
+        const last = path[i - 1];
+        const curr = path[i];
+        const next = path[i + 1];
+
+        if (!last || !next) continue;
+
+        const a = { x: next.x - last.x, y: next.y - last.y };
+        const b = { x: curr.x - last.x, y: curr.y - last.y };
+
+        const lenA = Math.hypot(a.x, a.y);
+        if (lenA < 0.0001) continue;
+
+        const theta = signedAngle(a, b);
+
+        const v = {
+          x: (next.y - last.y) / lenA,
+          y: (last.x - next.x) / lenA
+        };
+
+        const localDrift =
+          drift * Math.hypot(b.x, b.y) * Math.sin(theta);
+
+        const fx = localDrift * v.x;
+        const fy = localDrift * v.y;
+
+        // IMPORTANT: damp based on distance from head
+        const t = i / path.length;
+        const decay = Math.pow(0.85, t * 6);
+
+        curr.dx = (curr.dx + fx * decay) * 0.9;
+        curr.dy = (curr.dy + fy * decay) * 0.9;
+      }
+
+      for (let i = 0; i < path.length; i++) {
+      // clamp drift influence (prevents tail explosion)
+      path[i].dx *= 0.6;
+      path[i].dy *= 0.6;
+}
+
+      // --- 6. Apply drift to path
+      for (let i = 0; i < path.length; i++) {
+        path[i].x += path[i].dx;
+        path[i].y += path[i].dy;
+
+        path[i].dx *= 0.85;
+        path[i].dy *= 0.85;
+      }
+
+      // --- 7. Recompute length (important for stability)
+      totalPathLength = 0;
+
+      for (let i = 1; i < path.length; i++) {
+        totalPathLength += Math.hypot(
+          path[i].x - path[i - 1].x,
+          path[i].y - path[i - 1].y
+        );
+      }
+
+      // --- 8. Trim path
+      const maxPathLength = segmentDistance * (snake.length - 1);
+
+      while (totalPathLength > maxPathLength && path.length > 2) {
+        const first = path[0];
+        const second = path[1];
+
+        totalPathLength -= Math.hypot(
+          second.x - first.x,
+          second.y - first.y
+        );
+
+        path.shift();
+      }
+
+      // --- 9. Place snake along path (stable arc-length solver)
+      snake[0].x = newHead.x;
+      snake[0].y = newHead.y;
+
+      let j = path.length - 1;
+      let consumed = 0;
+      let cursorDist = 0;
 
       for (let i = 1; i < snake.length; i++) {
-        const lead = snake[i - 1];
-        const follow = snake[i];
-        
-        const dx = lead.x - follow.x;
-        const dy = lead.y - follow.y;
-        const dist = Math.hypot(dx, dy);
-        
-        if (dist > 0) {
-          // Calculate how much this segment needs to move to maintain segmentDistance
-          const targetDist = segmentDistance;
-          const moveAmount = dist - targetDist;
-          
-          const segDir = {
-            x: dx / dist,
-            y: dy / dist
-          };
 
-          // Move just enough to maintain spacing (can be more or less than head speed)
-          movedSnake[i].x = follow.x + segDir.x * moveAmount;
-          movedSnake[i].y = follow.y + segDir.y * moveAmount;
+        cursorDist += segmentDistance;
+
+        while (j > 0) {
+          const dx = path[j].x - path[j - 1].x;
+          const dy = path[j].y - path[j - 1].y;
+          const segLen = Math.hypot(dx, dy);
+
+          if (consumed + segLen >= cursorDist) break;
+
+          consumed += segLen;
+          j--;
+        }
+
+        if (j > 0) {
+          const dx = path[j].x - path[j - 1].x;
+          const dy = path[j].y - path[j - 1].y;
+          const segLen = Math.max(0.0001, Math.hypot(dx, dy));
+          const t = (cursorDist - consumed) / segLen;
+
+          snake[i].x = path[j].x - dx * t;
+          snake[i].y = path[j].y - dy * t;
+        } else {
+          snake[i].x = path[0].x;
+          snake[i].y = path[0].y;
         }
       }
-      snake = movedSnake;
 
-      // --- 7. Enforce spacing between segments
-      // for (let i = 1; i < snake.length; i++) {
-      //   const prev = snake[i - 1];
-      //   const curr = snake[i];
-
-      //   const dx = prev.x - curr.x;
-      //   const dy = prev.y - curr.y;
-      //   const d = Math.hypot(dx, dy);
-
-      //   if (d > segmentDistance) {
-      //     const t = segmentDistance / d;
-      //     curr.x = prev.x - dx * t;
-      //     curr.y = prev.y - dy * t;
-      //   }
-      // }
-
-      // --- 8. Turn radius shrinks - coils drift
-
-      // let adjustedSnake = snake.map(seg => ({ x: seg.x, y: seg.y })); // Create a copy
-
-      // for (let i = 2; i < snake.length - 1; i++) {
-      //   const last = snake[i - 1];
-      //   const next = snake[i + 1];
-      //   const curr = snake[i];
-      //   const a = { x: next.x - last.x, y: next.y - last.y };
-      //   const b = { x: curr.x - last.x, y: curr.y - last.y };
-      //   const theta = signedAngle(a, b);
-      //   const v = {
-      //     x: (next.y - last.y) / Math.hypot((next.y - last.y),(next.x - last.x)),
-      //     y: (last.x - next.x) / Math.hypot((next.y - last.y),(next.x - last.x))
-      //   };
-      //   adjustedSnake[i].x = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.x) + curr.x;
-      //   adjustedSnake[i].y = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.y) + curr.y;
-      // }
-      // snake = adjustedSnake;
-
-      // --- 9. Cap length
+      // --- 10. Cap length
       if (snake.length > maxLength) {
         snake.pop();
       }
 
-      // --- 10. Camera lock
+      // --- 11. Camera
       cameraTarget.x = newHead.x;
       cameraTarget.y = newHead.y;
 
@@ -270,8 +340,17 @@ window.addEventListener("DOMContentLoaded", () => {
 
       // Draw snake
       const snakeColor = cssToPhaserColor(getCSSColor("--main-color"));
+      const outlineColor = 0x000000; // Black outline (or use any color you want)
+      const outlineWidth = 2; // Outline thickness
+      
       for (let i = snake.length - 1; i >= 0; i--) {
-        const size = i === 0 ? 22.5 : 22; // head bigger than body
+        const size = i === 0 ? 22.5 : 22;
+        
+        // Draw outline (stroke)
+        graphics.lineStyle(outlineWidth, outlineColor, 1);
+        graphics.strokeCircle(snake[i].x, snake[i].y, size);
+        
+        // Draw fill
         graphics.fillStyle(snakeColor);
         graphics.fillCircle(snake[i].x, snake[i].y, size);
       }
