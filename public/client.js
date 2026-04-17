@@ -64,6 +64,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const maxTurnRate = 0.15;  //  jkMaximum turn per frame
     const drift = 0.1;
     const startLength = 100;
+    const damping = 0.92;
 
     let pointer;
     let graphics;
@@ -223,23 +224,67 @@ window.addEventListener("DOMContentLoaded", () => {
 
         const theta = signedAngle(a, b);
 
-        const v = {
-          x: (next.y - last.y) / lenA,
-          y: (last.x - next.x) / lenA
+        // Midpoint of neighbors (local "center")
+        const toPrev = {
+          x: last.x - curr.x,
+          y: last.y - curr.y
         };
 
-        const localDrift =
-          drift * Math.hypot(b.x, b.y) * Math.sin(theta);
+        const toNext = {
+          x: next.x - curr.x,
+          y: next.y - curr.y
+        };
 
-        const fx = localDrift * v.x;
-        const fy = localDrift * v.y;
+        // true local center pull (THIS actually contracts)
+        const inward = {
+          x: (toPrev.x + toNext.x) * 0.5,
+          y: (toPrev.y + toNext.y) * 0.5
+        };
+
+        // Keep your perpendicular force (for swirl)
+        const tangent = {
+          x: next.x - last.x,
+          y: next.y - last.y
+        };
+
+        const len = Math.hypot(tangent.x, tangent.y) || 1;
+
+        tangent.x /= len;
+        tangent.y /= len;
+
+        // perpendicular (clean swirl axis)
+        const normal = {
+          x: -tangent.y,
+          y: tangent.x
+        };
+
+        // Strengths (tune these)
+        const inwardStrength = drift * 1.2;   // pulls coils inward
+        const swirlStrength  = drift * 0.4;   // keeps curvature motion
+
+        const curvature = Math.sin(theta);
+
+        // inward should NOT depend on curvature
+        const fx = inward.x * 0.8 + normal.x * curvature * 0.4;
+        const fy = inward.y * 0.8 + normal.y * curvature * 0.4;
 
         // IMPORTANT: damp based on distance from head
         const t = i / path.length;
         const decay = Math.pow(0.85, t * 6);
 
-        curr.dx = (curr.dx + fx * decay) * 0.9;
-        curr.dy = (curr.dy + fy * decay) * 0.9;
+        curr.dx = (curr.dx + fx * decay) * 0.88;
+        curr.dy = (curr.dy + fy * decay) * 0.88;
+
+        const maxVel = 3;
+
+        curr.dx = Math.max(-maxVel, Math.min(maxVel, curr.dx));
+        curr.dy = Math.max(-maxVel, Math.min(maxVel, curr.dy));
+
+        // store debug force
+        curr.fx = fx;
+        curr.fy = fy;
+
+
       }
 
       for (let i = 0; i < path.length; i++) {
@@ -252,9 +297,6 @@ window.addEventListener("DOMContentLoaded", () => {
       for (let i = 0; i < path.length; i++) {
         path[i].x += path[i].dx;
         path[i].y += path[i].dy;
-
-        path[i].dx *= 0.85;
-        path[i].dy *= 0.85;
       }
 
       // --- 7. Recompute length (important for stability)
@@ -329,30 +371,66 @@ window.addEventListener("DOMContentLoaded", () => {
       cameraTarget.y = newHead.y;
 
       render();
+      console.log("head:", path[path.length - 1]);
+      console.log("mid:", path[Math.floor(path.length / 2)]);
+      console.log("tail:", path[0]);
     }
 
     function render() {
       graphics.clear();
 
-      // Draw circular world border
+      // -------------------------
+      // WORLD BOUNDARY
+      // -------------------------
       graphics.lineStyle(6, 0xffffff, 0.8);
       graphics.strokeCircle(world.x, world.y, world.radius);
 
-      // Draw snake
+      // -------------------------
+      // SNAKE FIRST (so debug is on top)
+      // -------------------------
       const snakeColor = cssToPhaserColor(getCSSColor("--main-color"));
-      const outlineColor = 0x000000; // Black outline (or use any color you want)
-      const outlineWidth = 2; // Outline thickness
-      
+
       for (let i = snake.length - 1; i >= 0; i--) {
         const size = i === 0 ? 22.5 : 22;
-        
-        // Draw outline (stroke)
-        graphics.lineStyle(outlineWidth, outlineColor, 1);
+
+        graphics.lineStyle(2, 0x000000, 1);
         graphics.strokeCircle(snake[i].x, snake[i].y, size);
-        
-        // Draw fill
-        graphics.fillStyle(snakeColor);
+
+        graphics.fillStyle(snakeColor, 1);
         graphics.fillCircle(snake[i].x, snake[i].y, size);
+      }
+
+      // -------------------------
+      // DEBUG DRAW LAST (VISIBLE ON TOP)
+      // -------------------------
+      graphics.lineStyle(2, 0x00ff00, 1);
+
+      for (let i = 0; i < path.length; i += 10) {
+        const p = path[i];
+
+        // path point
+        graphics.fillStyle(0x00ff00, 1);
+        graphics.fillCircle(p.x, p.y, 3);
+
+        // direction hint
+        graphics.beginPath();
+        graphics.moveTo(p.x, p.y);
+        graphics.lineTo(p.x + 6, p.y);
+        graphics.strokePath();
+      }
+
+      // force vectors
+      graphics.lineStyle(1, 0xff0000, 1);
+
+      for (let i = 0; i < path.length; i += 10) {
+        const p = path[i];
+
+        if (!p.fx && !p.fy) continue;
+
+        graphics.beginPath();
+        graphics.moveTo(p.x, p.y);
+        graphics.lineTo(p.x + p.fx * 200, p.y + p.fy * 200);
+        graphics.strokePath();
       }
     }
   }
