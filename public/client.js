@@ -258,8 +258,9 @@ window.addEventListener("DOMContentLoaded", () => {
       const snakeColor = cssToPhaserColor(getCSSColor("--main-color"));
       const outlineColor = 0x000000; // Black outline 
       const outlineWidth = 2; // Outline thickness
+
       
-      for (let i = snake.length - 1; i >= 0; i--) {
+      for (let i = snake.length - 1; i >= 1; i--) {
         const size = i === 0 ? 22.5 : 22;
         
         // Draw outline (stroke)
@@ -269,6 +270,8 @@ window.addEventListener("DOMContentLoaded", () => {
         // Draw fill
         graphics.fillStyle(snakeColor);
         graphics.fillCircle(snake[i].x, snake[i].y, size);
+        graphics.fillStyle(0xffffff);
+        graphics.fillCircle(snake[0].x, snake[0].y, size)
       }
     }
   }
