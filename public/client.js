@@ -57,11 +57,12 @@ window.addEventListener("DOMContentLoaded", () => {
     let path = [];
     let lastMouseX, lastMouseY;
     const pathDistance = 10;
+    const numSegments = 50;
     const maxLength = 500;
     const normalSpeed = 1.25;
     const boostSpeed = 2;
     const maxTurnRate = 0.075;  // Maximum turn per frame
-    const drift = 0.1;
+    const drift = 0.125;
     const startLength = 100;
 
     let pointer;
@@ -200,7 +201,9 @@ window.addEventListener("DOMContentLoaded", () => {
         snake[0].y = newHead.y;
       }
 
-      // Turn radius shrinks - coils drift
+      //-------------------------------
+      // Path drift
+      //-------------------------------
 
       let adjustedpath = path.map(seg => ({ x: seg.x, y: seg.y })); // Create a copy
 
@@ -226,13 +229,73 @@ window.addEventListener("DOMContentLoaded", () => {
       // Place segments on Path
       //------------------------
 
+      // scaledHeadDist: how far [0..1] the head has crept into the current segment.
+      // When it hits 1.0 a new path point is unshifted, so this is always in [0, 1).
       const scaledHeadDist = distFromNeck / pathDistance;
-        for (let i = 1; i < path.length; i++) {
-        const last = path[i - 1]; 
-        const curr = path[i]; 
-        snake[i].x = scaledHeadDist * (last.x - curr.x) + last.x; 
-        snake[i].y = scaledHeadDist * (last.y - curr.y) + last.y; 
+
+      for (let i = 0; i < snake.length; i++) {
+        // Each snake segment sits exactly i "segment-steps" behind the head.
+        // The head itself is at fractional position scaledHeadDist along path[0]→path[1],
+        // so segment i is at path index (i + scaledHeadDist), split into:
+        const pathIndexFloat = i + scaledHeadDist;
+        const pathIndex      = Math.floor(pathIndexFloat);   // which segment of path[]
+        const t              = pathIndexFloat - pathIndex;   // fraction along that segment
+
+        // Guard: don't read past the end of the path array
+        if (pathIndex + 1 >= path.length) break;
+
+        const a = path[pathIndex];
+        const b = path[pathIndex + 1];
+
+        snake[i].x = a.x - (b.x - a.x) * t;
+        snake[i].y = a.y - (b.y - a.y) * t;
       }
+
+      //-------------------------------
+      // Re-sample path to control spacing variance
+      //-------------------------------
+
+      const minSeg = 0.5; // just enough to prevent degenerate zero-length segments
+
+      const arcLengths = [0];
+      for (let i = 1; i < path.length; i++) {
+        const dx = path[i].x - path[i - 1].x;
+        const dy = path[i].y - path[i - 1].y;
+        arcLengths.push(arcLengths[i - 1] + Math.sqrt(dx * dx + dy * dy));
+      }
+
+      const targetArcs = [0];
+      for (let i = 1; i < path.length; i++) {
+        const naturalStep = arcLengths[i] - arcLengths[i - 1];
+        const clampedStep = Math.max(minSeg, naturalStep);
+        targetArcs.push(targetArcs[i - 1] + clampedStep);
+      }
+
+      const resampledPath = [{ x: path[0].x, y: path[0].y }];
+
+      for (let i = 1; i < path.length - 1; i++) {
+        const targetArc = targetArcs[i];
+
+        if (targetArc >= arcLengths[arcLengths.length - 1]) break;
+
+        let lo = 0, hi = path.length - 2;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (arcLengths[mid + 1] < targetArc) lo = mid + 1;
+          else hi = mid;
+        }
+
+        const t = (targetArc - arcLengths[lo]) /
+                  (arcLengths[lo + 1] - arcLengths[lo] + 1e-9);
+
+        resampledPath.push({
+          x: path[lo].x + (path[lo + 1].x - path[lo].x) * t,
+          y: path[lo].y + (path[lo + 1].y - path[lo].y) * t,
+        });
+      }
+
+    resampledPath.push({ x: path[path.length - 1].x, y: path[path.length - 1].y });
+    path = resampledPath;
 
       // --- 7. Cap length
       if (path.length > maxLength) {
@@ -245,6 +308,7 @@ window.addEventListener("DOMContentLoaded", () => {
       cameraTarget.y = newHead.y;
 
       render();
+      console.log(path);
     }
 
     function render() {
@@ -260,7 +324,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const outlineWidth = 2; // Outline thickness
 
       
-      for (let i = snake.length - 1; i >= 1; i--) {
+      for (let i = snake.length - 1; i >= 2; i--) {
         const size = i === 0 ? 22.5 : 22;
         
         // Draw outline (stroke)
@@ -271,7 +335,17 @@ window.addEventListener("DOMContentLoaded", () => {
         graphics.fillStyle(snakeColor);
         graphics.fillCircle(snake[i].x, snake[i].y, size);
         graphics.fillStyle(0xffffff);
-        graphics.fillCircle(snake[0].x, snake[0].y, size)
+        graphics.fillCircle(path[0].x, path[0].y, size)
+      }
+
+      //Debug Path
+      for (let i = path.length - 1; i >= 1; i--) {
+        const size = 2;
+        // Draw fill
+        graphics.fillStyle(0xD6391C);
+        graphics.fillCircle(path[i].x, path[i].y, size);
+        graphics.fillStyle(0xffffff);
+        graphics.fillCircle(path[0].x, path[0].y, size)
       }
     }
   }
