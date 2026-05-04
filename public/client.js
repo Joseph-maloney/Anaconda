@@ -56,7 +56,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let snake = [];
     let path = [];
     let lastMouseX, lastMouseY;
-    const pathDistance = 10;
+    const pathDistance = 15;
     const maxLength = 500;
     const normalSpeed = 1.25;
     const boostSpeed = 2;
@@ -224,28 +224,33 @@ window.addEventListener("DOMContentLoaded", () => {
       // Place segments on Path
       //------------------------
 
-      // scaledHeadDist: how far [0..1] the head has crept into the current segment.
-      // When it hits 1.0 a new path point is unshifted, so this is always in [0, 1).
+      const segmentSpacing = 1.1;
       const scaledHeadDist = distFromNeck / pathDistance;
 
-      for (let i = 0; i < snake.length; i++) {
-        // Each snake segment sits exactly i "segment-steps" behind the head.
-        // The head itself is at fractional position scaledHeadDist along path[0]→path[1],
-        // so segment i is at path index (i + scaledHeadDist), split into:
-        const pathIndexFloat = i + scaledHeadDist;
-        const pathIndex      = Math.floor(pathIndexFloat);   // which segment of path[]
-        const t              = pathIndexFloat - pathIndex;   // fraction along that segment
+      snake[0].x = newHead.x;
+      snake[0].y = newHead.y;
 
-        // Guard: don't read past the end of the path array
-        if (pathIndex + 1 >= path.length) break;
+      for (let i = 1; i < snake.length; i++) {
+        const pathIndexFloat = i * segmentSpacing - scaledHeadDist;
+        const pathIndex      = Math.floor(pathIndexFloat);
+        const t              = pathIndexFloat - pathIndex;
+
+        if (pathIndex + 1 >= path.length) {
+          // Pin to tail — no interpolation, no flashing
+          snake[i].x = path[path.length - 1].x;
+          snake[i].y = path[path.length - 1].y;
+          continue;
+        }
+
+        if (pathIndex < 0) continue;
 
         const a = path[pathIndex];
         const b = path[pathIndex + 1];
 
-        snake[i].x = a.x - (b.x - a.x) * t;
-        snake[i].y = a.y - (b.y - a.y) * t;
+        snake[i].x = a.x + (b.x - a.x) * t;
+        snake[i].y = a.y + (b.y - a.y) * t;
       }
-
+      
       // --- 7. Cap length
       if (path.length > maxLength) {
         path.pop();
@@ -256,46 +261,40 @@ window.addEventListener("DOMContentLoaded", () => {
       cameraTarget.x = newHead.x;
       cameraTarget.y = newHead.y;
 
+      // Add this just before render() in update()
+      
+
       render();
-      console.log(path);
     }
 
     function render() {
       graphics.clear();
 
-      // Draw circular world border
       graphics.lineStyle(6, 0xffffff, 0.8);
       graphics.strokeCircle(world.x, world.y, world.radius);
 
-      // Draw snake
       const snakeColor = cssToPhaserColor(getCSSColor("--main-color"));
-      const outlineColor = 0x000000; // Black outline 
-      const outlineWidth = 2; // Outline thickness
+      const outlineColor = 0x000000;
+      const outlineWidth = 2;
 
-      
-      for (let i = snake.length - 1; i >= 2; i--) {
-        const size = i === 0 ? 22.5 : 22;
-        
-        // Draw outline (stroke)
+      // Draw body segments back to front (tail → head) so head renders on top
+      for (let i = snake.length - 2; i >= 2; i--) {
+        const size = 22;
         graphics.lineStyle(outlineWidth, outlineColor, 1);
         graphics.strokeCircle(snake[i].x, snake[i].y, size);
-        
-        // Draw fill
         graphics.fillStyle(snakeColor);
         graphics.fillCircle(snake[i].x, snake[i].y, size);
-        graphics.fillStyle(0xffffff);
-        graphics.fillCircle(path[0].x, path[0].y, size)
       }
 
-      // //Debug Path
-      // for (let i = path.length - 1; i >= 1; i--) {
-      //   const size = 2;
-      //   // Draw fill
-      //   graphics.fillStyle(0xD6391C);
-      //   graphics.fillCircle(path[i].x, path[i].y, size);
-      //   graphics.fillStyle(0xffffff);
-      //   graphics.fillCircle(path[0].x, path[0].y, size)
-      // }
+      // Draw head on top
+      graphics.fillStyle(0xffffff);
+      graphics.fillCircle(snake[0].x, snake[0].y, 22.5);
+
+      // Debug pathoji
+      for (let i = path.length - 1; i >= 0; i--) {
+        graphics.fillStyle(i === 0 ? 0xffffff : 0xD6391C);
+        graphics.fillCircle(path[i].x, path[i].y, 2);
+      }
     }
   }
 
