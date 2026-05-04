@@ -57,7 +57,6 @@ window.addEventListener("DOMContentLoaded", () => {
     let path = [];
     let lastMouseX, lastMouseY;
     const pathDistance = 10;
-    const numSegments = 50;
     const maxLength = 500;
     const normalSpeed = 1.25;
     const boostSpeed = 2;
@@ -211,18 +210,14 @@ window.addEventListener("DOMContentLoaded", () => {
         const last = path[i - 1];
         const next = path[i + 1];
         const curr = path[i];
-        const a = { x: next.x - last.x, y: next.y - last.y };
-        const b = { x: curr.x - last.x, y: curr.y - last.y };
-        const theta = signedAngle(a, b);
-        const denom = Math.hypot(next.y - last.y, next.x - last.x) || 1;
-
         const v = {
-          x: (next.y - last.y) / denom,
-          y: (last.x - next.x) / denom
+          x: (last.x + next.x - (2 * curr.x)) / 2,
+          y: (last.y + next.y - (2 * curr.y)) / 2
         };
-        adjustedpath[i].x = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.x) + curr.x;
-        adjustedpath[i].y = (drift * Math.hypot(b.x,b.y) * Math.sin(theta) * v.y) + curr.y;
+        adjustedpath[i].x = drift * v.x + curr.x;
+        adjustedpath[i].y = drift * v.y + curr.y;
       }
+
       path = adjustedpath;
 
       //------------------------
@@ -250,52 +245,6 @@ window.addEventListener("DOMContentLoaded", () => {
         snake[i].x = a.x - (b.x - a.x) * t;
         snake[i].y = a.y - (b.y - a.y) * t;
       }
-
-      //-------------------------------
-      // Re-sample path to control spacing variance
-      //-------------------------------
-
-      const minSeg = 0.5; // just enough to prevent degenerate zero-length segments
-
-      const arcLengths = [0];
-      for (let i = 1; i < path.length; i++) {
-        const dx = path[i].x - path[i - 1].x;
-        const dy = path[i].y - path[i - 1].y;
-        arcLengths.push(arcLengths[i - 1] + Math.sqrt(dx * dx + dy * dy));
-      }
-
-      const targetArcs = [0];
-      for (let i = 1; i < path.length; i++) {
-        const naturalStep = arcLengths[i] - arcLengths[i - 1];
-        const clampedStep = Math.max(minSeg, naturalStep);
-        targetArcs.push(targetArcs[i - 1] + clampedStep);
-      }
-
-      const resampledPath = [{ x: path[0].x, y: path[0].y }];
-
-      for (let i = 1; i < path.length - 1; i++) {
-        const targetArc = targetArcs[i];
-
-        if (targetArc >= arcLengths[arcLengths.length - 1]) break;
-
-        let lo = 0, hi = path.length - 2;
-        while (lo < hi) {
-          const mid = (lo + hi) >> 1;
-          if (arcLengths[mid + 1] < targetArc) lo = mid + 1;
-          else hi = mid;
-        }
-
-        const t = (targetArc - arcLengths[lo]) /
-                  (arcLengths[lo + 1] - arcLengths[lo] + 1e-9);
-
-        resampledPath.push({
-          x: path[lo].x + (path[lo + 1].x - path[lo].x) * t,
-          y: path[lo].y + (path[lo + 1].y - path[lo].y) * t,
-        });
-      }
-
-    resampledPath.push({ x: path[path.length - 1].x, y: path[path.length - 1].y });
-    path = resampledPath;
 
       // --- 7. Cap length
       if (path.length > maxLength) {
@@ -338,15 +287,15 @@ window.addEventListener("DOMContentLoaded", () => {
         graphics.fillCircle(path[0].x, path[0].y, size)
       }
 
-      //Debug Path
-      for (let i = path.length - 1; i >= 1; i--) {
-        const size = 2;
-        // Draw fill
-        graphics.fillStyle(0xD6391C);
-        graphics.fillCircle(path[i].x, path[i].y, size);
-        graphics.fillStyle(0xffffff);
-        graphics.fillCircle(path[0].x, path[0].y, size)
-      }
+      // //Debug Path
+      // for (let i = path.length - 1; i >= 1; i--) {
+      //   const size = 2;
+      //   // Draw fill
+      //   graphics.fillStyle(0xD6391C);
+      //   graphics.fillCircle(path[i].x, path[i].y, size);
+      //   graphics.fillStyle(0xffffff);
+      //   graphics.fillCircle(path[0].x, path[0].y, size)
+      // }
     }
   }
 
