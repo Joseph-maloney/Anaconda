@@ -56,13 +56,14 @@ window.addEventListener("DOMContentLoaded", () => {
     let snake = [];
     let path = [];
     let lastMouseX, lastMouseY;
-    const pathDistance = 15;
+    const pathDistance = 45;
     const maxLength = 500;
     const normalSpeed = 1.25;
     const boostSpeed = 2;
-    const maxTurnRate = 0.075;  // Maximum turn per frame
-    const drift = 0.125;
-    const startLength = 100;
+    const maxTurnRate = 0.15;  // Maximum turn per frame
+    const drift = 0.01;
+    const startLength = 20;
+    const segmentSpacing = 0.3;
 
     let pointer;
     let graphics;
@@ -84,6 +85,15 @@ window.addEventListener("DOMContentLoaded", () => {
       const dot = a.x * b.x + a.y * b.y;
       const cross = a.x * b.y - a.y * b.x;
       return Math.atan2(cross, dot);
+    }
+
+    function catmullRom(p0, p1, p2, p3, t) {
+      const t2 = t * t;
+      const t3 = t2 * t;
+      return {
+        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2*p0.x - 5*p1.x + 4*p2.x - p3.x) * t2 + (-p0.x + 3*p1.x - 3*p2.x + p3.x) * t3),
+        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2*p0.y - 5*p1.y + 4*p2.y - p3.y) * t2 + (-p0.y + 3*p1.y - 3*p2.y + p3.y) * t3)
+      };
     }
 
     function create() {
@@ -123,6 +133,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
         // Path (history trail)
         path.push({ x: px, y: py });
+
+      }
+
+      for (let i = 0; i < length / segmentSpacing; i++) {
+        const px = x;
+        const py = y + i * pathDistance;
 
         // Snake (rendered segments)
         snake.push({ x: px, y: py });
@@ -224,7 +240,6 @@ window.addEventListener("DOMContentLoaded", () => {
       // Place segments on Path
       //------------------------
 
-      const segmentSpacing = 1.1;
       const scaledHeadDist = distFromNeck / pathDistance;
 
       snake[0].x = newHead.x;
@@ -235,20 +250,36 @@ window.addEventListener("DOMContentLoaded", () => {
         const pathIndex      = Math.floor(pathIndexFloat);
         const t              = pathIndexFloat - pathIndex;
 
+        // Guard negative indices — head hasn't moved far enough yet
+        if (pathIndex < 0) {
+          snake[i].x = snake[0].x;
+          snake[i].y = snake[0].y;
+          continue;
+        }
+
         if (pathIndex + 1 >= path.length) {
-          // Pin to tail — no interpolation, no flashing
           snake[i].x = path[path.length - 1].x;
           snake[i].y = path[path.length - 1].y;
           continue;
         }
 
-        if (pathIndex < 0) continue;
+        if (pathIndex < 1 || pathIndex + 2 >= path.length) {
+          const a = path[pathIndex];
+          const b = path[pathIndex + 1];
+          snake[i].x = a.x + (b.x - a.x) * t;
+          snake[i].y = a.y + (b.y - a.y) * t;
+          continue;
+        }
 
-        const a = path[pathIndex];
-        const b = path[pathIndex + 1];
-
-        snake[i].x = a.x + (b.x - a.x) * t;
-        snake[i].y = a.y + (b.y - a.y) * t;
+        const pos = catmullRom(
+          path[pathIndex - 1],
+          path[pathIndex],
+          path[pathIndex + 1],
+          path[pathIndex + 2],
+          t
+        );
+        snake[i].x = pos.x;
+        snake[i].y = pos.y;
       }
       
       // --- 7. Cap length
@@ -290,7 +321,7 @@ window.addEventListener("DOMContentLoaded", () => {
       graphics.fillStyle(0xffffff);
       graphics.fillCircle(snake[0].x, snake[0].y, 22.5);
 
-      // Debug pathoji
+      // Debug path
       for (let i = path.length - 1; i >= 0; i--) {
         graphics.fillStyle(i === 0 ? 0xffffff : 0xD6391C);
         graphics.fillCircle(path[i].x, path[i].y, 2);
