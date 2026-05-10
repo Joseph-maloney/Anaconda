@@ -56,14 +56,14 @@ window.addEventListener("DOMContentLoaded", () => {
     let snake = [];
     let path = [];
     let lastMouseX, lastMouseY;
-    const pathDistance = 45;
+    const pathSpacing = 45;
     const maxLength = 500;
     const normalSpeed = 1.25;
     const boostSpeed = 2;
     const maxTurnRate = 0.15;  // Maximum turn per frame
     const drift = 0.01;
     const startLength = 20;
-    const segmentSpacing = 0.3;
+    const segmentSpacing = 20;
 
     let pointer;
     let graphics;
@@ -129,16 +129,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
       for (let i = 0; i < length; i++) {
         const px = x;
-        const py = y + i * pathDistance;
+        const py = y + i * pathSpacing;
 
         // Path (history trail)
         path.push({ x: px, y: py });
-
       }
 
-      for (let i = 0; i < length / segmentSpacing; i++) {
+      for (let i = 0; i < pathSpacing * (length - 3) / segmentSpacing; i++) {
         const px = x;
-        const py = y + i * pathDistance;
+        const py = y + i * segmentSpacing;
 
         // Snake (rendered segments)
         snake.push({ x: px, y: py });
@@ -205,7 +204,7 @@ window.addEventListener("DOMContentLoaded", () => {
       };
 
       const distFromNeck = Math.hypot(newHead.x - neck.x, newHead.y - neck.y);
-      if (distFromNeck >= pathDistance) {
+      if (distFromNeck >= pathSpacing) {
         path.unshift(newHead);
         path.pop()
       } else {
@@ -240,42 +239,43 @@ window.addEventListener("DOMContentLoaded", () => {
       // Place segments on Path
       //------------------------
 
-      const scaledHeadDist = distFromNeck / pathDistance;
+      const scaledHeadDist = distFromNeck / pathSpacing;
+
+      // Phantom point extrapolated ahead of the head
+      const phantom = {
+        x: path[0].x + (path[0].x - path[1].x),
+        y: path[0].y + (path[0].y - path[1].y)
+      };
+      const extPath = [phantom, ...path];
 
       snake[0].x = newHead.x;
       snake[0].y = newHead.y;
 
       for (let i = 1; i < snake.length; i++) {
-        const pathIndexFloat = i * segmentSpacing - scaledHeadDist;
+        const pathIndexFloat = i * (segmentSpacing / pathSpacing) - scaledHeadDist;
         const pathIndex      = Math.floor(pathIndexFloat);
         const t              = pathIndexFloat - pathIndex;
 
-        // Guard negative indices — head hasn't moved far enough yet
+        // Shift by 1 into extPath so path[0] becomes extPath[1]
+        const e = pathIndex + 1;
+
         if (pathIndex < 0) {
           snake[i].x = snake[0].x;
           snake[i].y = snake[0].y;
           continue;
         }
 
-        if (pathIndex + 1 >= path.length) {
-          snake[i].x = path[path.length - 1].x;
-          snake[i].y = path[path.length - 1].y;
-          continue;
-        }
-
-        if (pathIndex < 1 || pathIndex + 2 >= path.length) {
-          const a = path[pathIndex];
-          const b = path[pathIndex + 1];
-          snake[i].x = a.x + (b.x - a.x) * t;
-          snake[i].y = a.y + (b.y - a.y) * t;
+        if (e + 2 >= extPath.length) {
+          snake[i].x = extPath[extPath.length - 1].x;
+          snake[i].y = extPath[extPath.length - 1].y;
           continue;
         }
 
         const pos = catmullRom(
-          path[pathIndex - 1],
-          path[pathIndex],
-          path[pathIndex + 1],
-          path[pathIndex + 2],
+          extPath[e - 1],
+          extPath[e],
+          extPath[e + 1],
+          extPath[e + 2],
           t
         );
         snake[i].x = pos.x;
@@ -325,6 +325,25 @@ window.addEventListener("DOMContentLoaded", () => {
       for (let i = path.length - 1; i >= 0; i--) {
         graphics.fillStyle(i === 0 ? 0xffffff : 0xD6391C);
         graphics.fillCircle(path[i].x, path[i].y, 2);
+      }
+
+      if (path.length >= 4) {
+        graphics.lineStyle(2, 0x00ff00, 0.8);
+        for (let i = 1; i < path.length - 2; i++) {
+          const p0 = path[i - 1];
+          const p1 = path[i];
+          const p2 = path[i + 1];
+          const p3 = path[i + 2];
+          
+          const steps = 10;
+          graphics.moveTo(p1.x, p1.y);
+          for (let s = 1; s <= steps; s++) {
+            const t = s / steps;
+            const pos = catmullRom(p0, p1, p2, p3, t);
+            graphics.lineTo(pos.x, pos.y);
+          }
+        }
+        graphics.strokePath();
       }
     }
   }
